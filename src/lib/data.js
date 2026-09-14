@@ -29,30 +29,35 @@ export function listenAchievements(uid, callback) {
   })
 }
 
-export async function addAchievement(uid, { title, description, categoryId, categoryName, imageFile, date }) {
-  let imageUrl = null
-  let imagePath = null
+export async function addAchievement(uid, { title, description, categoryId, categoryName, imageFiles, date }) {
+  const imageUrls = []
+  const imagePaths = []
 
-  if (imageFile) {
-    imagePath = `achievements/${uid}/${Date.now()}_${imageFile.name}`
+  const files = (imageFiles || []).slice(0, 3)
+  for (const file of files) {
+    const imagePath = `achievements/${uid}/${Date.now()}_${file.name}`
     const storageRef = ref(storage, imagePath)
-    await uploadBytes(storageRef, imageFile)
-    imageUrl = await getDownloadURL(storageRef)
+    await uploadBytes(storageRef, file)
+    const url = await getDownloadURL(storageRef)
+    imageUrls.push(url)
+    imagePaths.push(imagePath)
   }
 
   return addDoc(collection(db, 'achievements'), {
     uid, title, description: description || '',
     categoryId: categoryId || null,
     categoryName: categoryName || null,
-    imageUrl, imagePath,
+    imageUrls, imagePaths,
     date: date || new Date().toISOString().slice(0, 10),
     createdAt: serverTimestamp()
   })
 }
 
-export async function deleteAchievement(id, imagePath) {
-  if (imagePath) {
-    try { await deleteObject(ref(storage, imagePath)) } catch (e) { /* ignore */ }
+export async function deleteAchievement(id, imagePaths) {
+  if (imagePaths && imagePaths.length) {
+    for (const p of imagePaths) {
+      try { await deleteObject(ref(storage, p)) } catch (e) { /* ignore */ }
+    }
   }
   return deleteDoc(doc(db, 'achievements', id))
 }

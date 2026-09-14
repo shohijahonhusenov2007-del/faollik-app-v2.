@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, Image as ImageIcon } from 'lucide-react'
+import { ArrowLeft, Camera, Check, X } from 'lucide-react'
 import { addAchievement } from '../lib/data'
 
 export default function AddAchievementModal({ uid, categories, onClose }) {
@@ -7,33 +7,40 @@ export default function AddAchievementModal({ uid, categories, onClose }) {
   const [description, setDescription] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
-  const [imageFile, setImageFile] = useState(null)
-  const [preview, setPreview] = useState(null)
+  const [imageFiles, setImageFiles] = useState([])
+  const [previews, setPreviews] = useState([])
+  const [showCategorySheet, setShowCategorySheet] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  const handleImage = (e) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setImageFile(file)
-      setPreview(URL.createObjectURL(file))
-    }
+  const selectedCategoryName = categories.find(c => c.id === categoryId)?.name || ''
+
+  const handleImagePick = (e) => {
+    const files = Array.from(e.target.files || [])
+    const combined = [...imageFiles, ...files].slice(0, 3)
+    setImageFiles(combined)
+    setPreviews(combined.map(f => URL.createObjectURL(f)))
+  }
+
+  const removeImage = (idx) => {
+    const combined = imageFiles.filter((_, i) => i !== idx)
+    setImageFiles(combined)
+    setPreviews(combined.map(f => URL.createObjectURL(f)))
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!title.trim()) { setError('Sarlavha kiritilishi shart'); return }
+    if (!title.trim()) { setError('Nomi kiritilishi shart'); return }
+    if (!categoryId) { setError('Kategoriya tanlanishi shart'); return }
     setSaving(true)
     setError('')
     try {
-      const finalCategoryName = categories.find(c => c.id === categoryId)?.name || null
-
       await addAchievement(uid, {
         title: title.trim(),
         description: description.trim(),
-        categoryId: categoryId || null,
-        categoryName: finalCategoryName,
-        imageFile,
+        categoryId,
+        categoryName: selectedCategoryName,
+        imageFiles,
         date
       })
       onClose()
@@ -45,66 +52,110 @@ export default function AddAchievementModal({ uid, categories, onClose }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-handle" />
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 className="modal-title">Yangi yutuq</h3>
-          <button className="icon-btn" onClick={onClose}><X size={22} /></button>
-        </div>
+    <div className="fullpage-overlay">
+      <div className="fullpage-header">
+        <button className="fullpage-back" onClick={onClose}><ArrowLeft size={20} /></button>
+        <h3>Yutuq qo'shish</h3>
+      </div>
 
+      <div className="fullpage-content">
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label">Rasm</label>
-            <label style={{
-              display: 'flex', flexDirection: 'column',
-              justifyContent: 'center', alignItems: 'center', border: '1.5px dashed #D1D5DB', borderRadius: 12,
-              padding: 24, cursor: 'pointer', overflow: 'hidden'
-            }}>
-              {preview ? (
-                <img src={preview} alt="preview" style={{ width: '100%', height: 160, objectFit: 'cover' }} />
-              ) : (
-                <>
-                  <ImageIcon size={28} color="#9CA3AF" />
-                  <span style={{ fontSize: 13, color: '#9CA3AF', marginTop: 6 }}>Rasm tanlash</span>
-                </>
-              )}
-              <input type="file" accept="image/*" onChange={handleImage} style={{ display: 'none' }} />
-            </label>
+            <label className="form-label">Nomi *</label>
+            <input
+              className="form-input" value={title}
+              onChange={e => setTitle(e.target.value)}
+              placeholder="Yutuq nomi"
+            />
           </div>
 
           <div className="form-group">
-            <label className="form-label">Sarlavha *</label>
-            <input className="form-input" value={title} onChange={e => setTitle(e.target.value)}
-              placeholder="Masalan: Ko'ngillilar tanlovi g'olibi" />
+            <label className="form-label">Kategoriya *</label>
+            <button type="button" className="select-btn" onClick={() => setShowCategorySheet(true)}>
+              <span style={{ color: selectedCategoryName ? 'var(--color-text)' : 'var(--color-text-muted)' }}>
+                {selectedCategoryName || 'Tanlang'}
+              </span>
+              <span>▾</span>
+            </button>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Sana *</label>
+            <input
+              type="date" className="form-input" value={date}
+              onChange={e => setDate(e.target.value)}
+            />
           </div>
 
           <div className="form-group">
             <label className="form-label">Tavsif</label>
-            <textarea className="form-textarea" value={description} onChange={e => setDescription(e.target.value)}
-              placeholder="Qo'shimcha ma'lumot..." />
+            <textarea
+              className="form-textarea" value={description}
+              onChange={e => setDescription(e.target.value.slice(0, 500))}
+              placeholder="Yutuq haqida qisqacha..."
+            />
+            <div className="char-count">{description.length}/500</div>
           </div>
 
           <div className="form-group">
-            <label className="form-label">Kategoriya</label>
-            <select className="form-select" value={categoryId} onChange={e => setCategoryId(e.target.value)}>
-              <option value="">Tanlanmagan</option>
-              {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Sana</label>
-            <input type="date" className="form-input" value={date} onChange={e => setDate(e.target.value)} />
+            <label className="form-label">Rasm qo'shish (max 3)</label>
+            <div className="image-picker">
+              {previews.map((src, idx) => (
+                <div key={idx} className="image-picker-slot" style={{ position: 'relative', border: 'none' }}>
+                  <img src={src} alt="" />
+                  <button
+                    type="button"
+                    onClick={() => removeImage(idx)}
+                    style={{
+                      position: 'absolute', top: 2, right: 2, background: 'rgba(0,0,0,0.6)',
+                      border: 'none', borderRadius: '50%', width: 20, height: 20, display: 'flex',
+                      alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
+                    }}
+                  >
+                    <X size={12} color="white" />
+                  </button>
+                </div>
+              ))}
+              {imageFiles.length < 3 && (
+                <label className="image-picker-slot">
+                  <Camera size={22} />
+                  <span>Rasm tanlash</span>
+                  <input type="file" accept="image/*" multiple onChange={handleImagePick} style={{ display: 'none' }} />
+                </label>
+              )}
+            </div>
           </div>
 
           {error && <p className="error-text">{error}</p>}
 
           <button type="submit" className="btn-primary" disabled={saving}>
+            <Check size={18} />
             {saving ? 'Saqlanmoqda...' : 'Saqlash'}
           </button>
         </form>
       </div>
+
+      {showCategorySheet && (
+        <div className="sheet-overlay" onClick={() => setShowCategorySheet(false)}>
+          <div className="sheet-panel" onClick={e => e.stopPropagation()}>
+            {categories.length === 0 && (
+              <p style={{ padding: '16px 4px', color: '#9CA3AF', fontSize: 14 }}>
+                Hali kategoriya yo'q
+              </p>
+            )}
+            {categories.map(c => (
+              <div
+                key={c.id}
+                className="sheet-item"
+                onClick={() => { setCategoryId(c.id); setShowCategorySheet(false) }}
+              >
+                <span>{c.name}</span>
+                <span className={`sheet-radio ${categoryId === c.id ? 'checked' : ''}`} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
