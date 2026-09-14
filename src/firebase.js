@@ -3,15 +3,14 @@ import { getAuth } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage'
 
-// Firebase Console -> Project settings -> Your apps -> SDK setup and configuration
-// dan shu qiymatlarni ko'chirib qo'ying
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyAxaBuaK4nxAX-Afsd64dubTRsOgcD-Tuw",
+  authDomain: "ijtimoiy-faollik-8fafa.firebaseapp.com",
+  projectId: "ijtimoiy-faollik-8fafa",
+  storageBucket: "ijtimoiy-faollik-8fafa.firebasestorage.app",
+  messagingSenderId: "72259487865",
+  appId: "1:72259487865:web:4659588141472e5b6deca8",
+  measurementId: "G-565EB4WPQJ"
 }
 
 const app = initializeApp(firebaseConfig)
