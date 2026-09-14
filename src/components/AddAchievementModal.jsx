@@ -1,12 +1,11 @@
 import { useState } from 'react'
 import { X, Image as ImageIcon } from 'lucide-react'
-import { addAchievement, addCategory } from '../lib/data'
+import { addAchievement } from '../lib/data'
 
 export default function AddAchievementModal({ uid, categories, onClose }) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [categoryId, setCategoryId] = useState('')
-  const [newCategory, setNewCategory] = useState('')
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
   const [imageFile, setImageFile] = useState(null)
   const [preview, setPreview] = useState(null)
@@ -27,19 +26,12 @@ export default function AddAchievementModal({ uid, categories, onClose }) {
     setSaving(true)
     setError('')
     try {
-      let finalCategoryId = categoryId
-      let finalCategoryName = categories.find(c => c.id === categoryId)?.name || null
-
-      if (newCategory.trim()) {
-        const created = await addCategory(uid, newCategory.trim())
-        finalCategoryId = created.id
-        finalCategoryName = newCategory.trim()
-      }
+      const finalCategoryName = categories.find(c => c.id === categoryId)?.name || null
 
       await addAchievement(uid, {
         title: title.trim(),
         description: description.trim(),
-        categoryId: finalCategoryId || null,
+        categoryId: categoryId || null,
         categoryName: finalCategoryName,
         imageFile,
         date
@@ -65,9 +57,9 @@ export default function AddAchievementModal({ uid, categories, onClose }) {
           <div className="form-group">
             <label className="form-label">Rasm</label>
             <label style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'center',
-              justifyContent: 'center', border: '1.5px dashed #D1D5DB', borderRadius: 12,
-              padding: preview ? 0 : 24, cursor: 'pointer', overflow: 'hidden'
+              display: 'flex', flexDirection: 'column',
+              justifyContent: 'center', alignItems: 'center', border: '1.5px dashed #D1D5DB', borderRadius: 12,
+              padding: 24, cursor: 'pointer', overflow: 'hidden'
             }}>
               {preview ? (
                 <img src={preview} alt="preview" style={{ width: '100%', height: 160, objectFit: 'cover' }} />
@@ -99,12 +91,6 @@ export default function AddAchievementModal({ uid, categories, onClose }) {
               <option value="">Tanlanmagan</option>
               {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Yoki yangi kategoriya yarating</label>
-            <input className="form-input" value={newCategory} onChange={e => setNewCategory(e.target.value)}
-              placeholder="Yangi kategoriya nomi" />
           </div>
 
           <div className="form-group">
