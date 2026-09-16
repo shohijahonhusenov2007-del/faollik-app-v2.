@@ -634,3 +634,10 @@ body {
   border-radius: 50%;
   background: #60A5FA;
 }
+
+.flex-page {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}

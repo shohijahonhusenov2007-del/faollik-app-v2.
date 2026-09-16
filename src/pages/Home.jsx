@@ -19,7 +19,7 @@ export default function Home() {
   const initial = (profile?.name || 'F').charAt(0).toUpperCase()
 
   return (
-    <div>
+    <div className="flex-page">
       <div className="header-card">
         <div className="header-top-row">
           <h1 className="header-title">Bosh sahifa</h1>

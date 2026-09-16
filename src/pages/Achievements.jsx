@@ -27,7 +27,7 @@ export default function Achievements() {
   }
 
   return (
-    <div>
+    <div className="flex-page">
       <div className="header-card" style={{ paddingBottom: 20 }}>
         <div className="header-top-row" style={{ marginBottom: 0 }}>
           <h1 className="header-title">Yutuqlar</h1>
