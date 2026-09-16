@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
-import { listenCategories } from './lib/data'
+import { STATIC_CATEGORIES } from './lib/categories'
 
 import BottomNav from './components/BottomNav'
 import AddAchievementModal from './components/AddAchievementModal'
@@ -15,13 +15,6 @@ import Login from './pages/Login'
 function AppShell() {
   const { user } = useAuth()
   const [showAdd, setShowAdd] = useState(false)
-  const [categories, setCategories] = useState([])
-
-  useEffect(() => {
-    if (!user) return
-    const unsub = listenCategories(user.uid, setCategories)
-    return unsub
-  }, [user])
 
   return (
     <div className="app-shell">
@@ -37,7 +30,7 @@ function AppShell() {
       {showAdd && (
         <AddAchievementModal
           uid={user.uid}
-          categories={categories}
+          categories={STATIC_CATEGORIES}
           onClose={() => setShowAdd(false)}
         />
       )}

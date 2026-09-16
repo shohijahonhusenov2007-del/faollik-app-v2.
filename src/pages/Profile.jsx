@@ -1,23 +1,25 @@
 import { useEffect, useState } from 'react'
-import { LogOut, User as UserIcon, Mail, Save, Plus, Trash2 } from 'lucide-react'
+import { LogOut, User as UserIcon, Mail, Save, FileText, Settings, ShieldCheck } from 'lucide-react'
 import { doc, updateDoc } from 'firebase/firestore'
 import { useAuth } from '../context/AuthContext'
 import { db } from '../firebase'
-import { listenCategories, addCategory, deleteCategory } from '../lib/data'
+import { listenAchievements } from '../lib/data'
+import { STATIC_CATEGORIES } from '../lib/categories'
 
 export default function Profile() {
   const { user, profile, setProfile, logout } = useAuth()
   const [name, setName] = useState(profile?.name || '')
   const [saving, setSaving] = useState(false)
-  const [categories, setCategories] = useState([])
-  const [newCategory, setNewCategory] = useState('')
-  const [addingCategory, setAddingCategory] = useState(false)
+  const [achievements, setAchievements] = useState([])
+  const [showSettings, setShowSettings] = useState(false)
 
   useEffect(() => {
     if (!user) return
-    const unsub = listenCategories(user.uid, setCategories)
+    const unsub = listenAchievements(user.uid, setAchievements)
     return unsub
   }, [user])
+
+  const totalImages = achievements.reduce((sum, a) => sum + (a.imageUrls?.length || 0), 0)
 
   const handleSave = async () => {
     if (!name.trim()) return
@@ -27,91 +29,77 @@ export default function Profile() {
     setSaving(false)
   }
 
-  const handleAddCategory = async () => {
-    if (!newCategory.trim()) return
-    setAddingCategory(true)
-    await addCategory(user.uid, newCategory.trim())
-    setNewCategory('')
-    setAddingCategory(false)
-  }
-
-  const handleDeleteCategory = async (id) => {
-    if (confirm("Kategoriya o'chirilsinmi?")) {
-      await deleteCategory(id)
-    }
-  }
-
   return (
-    <div className="page-content" style={{ paddingTop: 20 }}>
-      <h1 style={{ fontSize: 20, fontWeight: 800, margin: '0 0 16px 0' }}>Profil</h1>
-
-      <div style={{ textAlign: 'center', marginBottom: 24 }}>
-        <div className="user-avatar" style={{
-          width: 72, height: 72, fontSize: 28, margin: '0 auto 10px auto',
-          background: 'var(--color-primary)'
-        }}>
-          {(profile?.name || 'F').charAt(0).toUpperCase()}
+    <div>
+      <div className="header-card">
+        <div className="header-top-row">
+          <h1 className="header-title">Profil</h1>
+          {profile?.role === 'Administrator' && <span className="admin-badge">Admin</span>}
         </div>
-        <p style={{ fontWeight: 700, fontSize: 16, margin: 0 }}>{profile?.name}</p>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: 13, margin: 0 }}>{profile?.role}</p>
+        <div className="user-card">
+          <div className="user-avatar">{(profile?.name || 'F').charAt(0).toUpperCase()}</div>
+          <div>
+            <p className="user-name">{profile?.name}</p>
+            <p className="user-role">{profile?.role}</p>
+          </div>
+        </div>
       </div>
 
-      <div className="form-group">
-        <label className="form-label"><UserIcon size={14} style={{ verticalAlign: 'middle' }} /> Ism</label>
-        <input className="form-input" value={name} onChange={e => setName(e.target.value)} />
+      <div className="stats-row">
+        <div className="stat-card stat-green">
+          <span className="stat-number">{achievements.length}</span>
+          <span className="stat-label">Yutuqlar</span>
+        </div>
+        <div className="stat-card stat-blue">
+          <span className="stat-number">{STATIC_CATEGORIES.length}</span>
+          <span className="stat-label">Kategoriyalar</span>
+        </div>
+        <div className="stat-card stat-purple">
+          <span className="stat-number">{totalImages}</span>
+          <span className="stat-label">Rasmlar</span>
+        </div>
       </div>
 
-      <div className="form-group">
-        <label className="form-label"><Mail size={14} style={{ verticalAlign: 'middle' }} /> Email</label>
-        <input className="form-input" value={user?.email || ''} disabled style={{ opacity: 0.6 }} />
-      </div>
-
-      <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ marginBottom: 24 }}>
-        <Save size={16} style={{ verticalAlign: 'middle', marginRight: 6 }} />
-        {saving ? 'Saqlanmoqda...' : 'Saqlash'}
-      </button>
-
-      <div className="section-header" style={{ marginTop: 8 }}>
-        <h2>Kategoriyalar</h2>
-      </div>
-
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-        <input
-          className="form-input"
-          placeholder="Yangi kategoriya nomi"
-          value={newCategory}
-          onChange={e => setNewCategory(e.target.value)}
-        />
-        <button
-          className="btn-primary"
-          style={{ width: 48, padding: 0, flexShrink: 0 }}
-          onClick={handleAddCategory}
-          disabled={addingCategory}
-        >
-          <Plus size={20} />
+      <div className="page-content" style={{ paddingTop: 24 }}>
+        <button className="profile-menu-item" onClick={() => alert("Tez orada qo'shiladi")}>
+          <FileText size={18} />
+          PDF chiqarish
         </button>
-      </div>
 
-      {categories.length === 0 ? (
-        <p style={{ color: 'var(--color-text-muted)', fontSize: 13.5 }}>Hali kategoriya yo'q</p>
-      ) : (
-        categories.map(c => (
-          <div key={c.id} style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            background: 'white', padding: '12px 14px', borderRadius: 'var(--radius-sm)', marginBottom: 8
-          }}>
-            <span style={{ fontSize: 14.5, fontWeight: 600 }}>{c.name}</span>
-            <button className="icon-btn" onClick={() => handleDeleteCategory(c.id)}>
-              <Trash2 size={16} color="#DC2626" />
+        <button className="profile-menu-item" onClick={() => setShowSettings(!showSettings)}>
+          <Settings size={18} />
+          Sozlamalar
+        </button>
+
+        {showSettings && (
+          <div style={{ marginBottom: 16 }}>
+            <div className="form-group">
+              <label className="form-label"><UserIcon size={14} style={{ verticalAlign: 'middle' }} /> Ism</label>
+              <input className="form-input" value={name} onChange={e => setName(e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label className="form-label"><Mail size={14} style={{ verticalAlign: 'middle' }} /> Email</label>
+              <input className="form-input" value={user?.email || ''} disabled style={{ opacity: 0.6 }} />
+            </div>
+            <button className="btn-primary" onClick={handleSave} disabled={saving}>
+              <Save size={16} style={{ verticalAlign: 'middle', marginRight: 6 }} />
+              {saving ? 'Saqlanmoqda...' : 'Saqlash'}
             </button>
           </div>
-        ))
-      )}
+        )}
 
-      <button className="btn-secondary" onClick={logout} style={{ borderColor: '#DC2626', color: '#DC2626', marginTop: 24 }}>
-        <LogOut size={16} style={{ verticalAlign: 'middle', marginRight: 6 }} />
-        Chiqish
-      </button>
+        {profile?.role === 'Administrator' && (
+          <button className="profile-menu-item admin-panel" onClick={() => alert("Tez orada qo'shiladi")}>
+            <ShieldCheck size={18} />
+            Admin panelga o'tish
+          </button>
+        )}
+
+        <button className="profile-menu-item danger" onClick={logout}>
+          <LogOut size={18} />
+          Chiqish
+        </button>
+      </div>
     </div>
   )
 }

@@ -1,20 +1,19 @@
 import { useEffect, useState } from 'react'
 import { Search, Trash2, ImageOff } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { listenAchievements, listenCategories, deleteAchievement } from '../lib/data'
+import { listenAchievements, deleteAchievement } from '../lib/data'
+import { STATIC_CATEGORIES } from '../lib/categories'
 
 export default function Achievements() {
   const { user } = useAuth()
   const [achievements, setAchievements] = useState([])
-  const [categories, setCategories] = useState([])
   const [filter, setFilter] = useState('')
   const [search, setSearch] = useState('')
 
   useEffect(() => {
     if (!user) return
-    const unsub1 = listenAchievements(user.uid, setAchievements)
-    const unsub2 = listenCategories(user.uid, setCategories)
-    return () => { unsub1(); unsub2() }
+    const unsub = listenAchievements(user.uid, setAchievements)
+    return unsub
   }, [user])
 
   const filtered = achievements
@@ -49,7 +48,7 @@ export default function Achievements() {
           className={`filter-chip ${filter === '' ? 'active' : ''}`}>
           Barchasi
         </button>
-        {categories.map(c => (
+        {STATIC_CATEGORIES.map(c => (
           <button
             key={c.id}
             onClick={() => setFilter(c.id)}
