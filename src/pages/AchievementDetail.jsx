@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Pencil, Trash2, Calendar, User as UserIcon } from 'lucide-react'
+import { ArrowLeft, Pencil, Trash2, Calendar, User as UserIcon, X, Download, Share2 } from 'lucide-react'
 import { doc, getDoc } from 'firebase/firestore'
+import { Share } from '@capacitor/share'
+import { Media } from '@capacitor-community/media'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import { deleteAchievement } from '../lib/data'
@@ -12,6 +14,7 @@ export default function AchievementDetail() {
   const { profile } = useAuth()
   const [achievement, setAchievement] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [lightboxUrl, setLightboxUrl] = useState(null)
 
   useEffect(() => {
     const load = async () => {
@@ -26,6 +29,26 @@ export default function AchievementDetail() {
     if (confirm(`"${achievement.title}" o'chirilsinmi?`)) {
       await deleteAchievement(achievement.id)
       navigate('/yutuqlar')
+    }
+  }
+
+  const handleSaveToGallery = async () => {
+    try {
+      await Media.savePhoto({ path: lightboxUrl })
+      alert('Rasm galereyaga saqlandi')
+    } catch (err) {
+      alert('Saqlashda xatolik: ' + err.message)
+    }
+  }
+
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        title: achievement?.title || 'Yutuq',
+        url: lightboxUrl
+      })
+    } catch (err) {
+      // user cancelled or error, ignore silently
     }
   }
 
@@ -51,7 +74,15 @@ export default function AchievementDetail() {
         <button className="fullpage-back" onClick={handleDelete}><Trash2 size={18} /></button>
       </div>
 
-      {mainImage && <img src={mainImage} className="detail-hero" alt={achievement.title} />}
+      {mainImage && (
+        <img
+          src={mainImage}
+          className="detail-hero"
+          alt={achievement.title}
+          onClick={() => setLightboxUrl(mainImage)}
+          style={{ cursor: 'pointer' }}
+        />
+      )}
 
       <div className="detail-content">
         <h1 className="detail-title">{achievement.title}</h1>
@@ -80,7 +111,12 @@ export default function AchievementDetail() {
             </h2>
             <div className="detail-thumb-row">
               {achievement.imageUrls.map((url, i) => (
-                <div key={i} className="detail-thumb">
+                <div
+                  key={i}
+                  className="detail-thumb"
+                  onClick={() => setLightboxUrl(url)}
+                  style={{ cursor: 'pointer' }}
+                >
                   <img src={url} alt="" />
                 </div>
               ))}
@@ -88,6 +124,27 @@ export default function AchievementDetail() {
           </>
         )}
       </div>
+
+      {lightboxUrl && (
+        <div className="lightbox-overlay">
+          <div className="lightbox-top">
+            <button onClick={() => setLightboxUrl(null)}><X size={20} /></button>
+          </div>
+          <div className="lightbox-image-wrap">
+            <img src={lightboxUrl} alt="" />
+          </div>
+          <div className="lightbox-bottom">
+            <button className="lightbox-action-btn" onClick={handleSaveToGallery}>
+              <span className="icon-circle"><Download size={20} /></span>
+              Saqlash
+            </button>
+            <button className="lightbox-action-btn" onClick={handleShare}>
+              <span className="icon-circle"><Share2 size={20} /></span>
+              Ulashish
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

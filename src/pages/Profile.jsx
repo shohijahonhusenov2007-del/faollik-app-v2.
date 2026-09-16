@@ -1,17 +1,20 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { LogOut, User as UserIcon, Mail, Save, FileText, Settings, ShieldCheck } from 'lucide-react'
+import { LogOut, User as UserIcon, Mail, Save, FileText, Settings, ShieldCheck, Camera } from 'lucide-react'
 import { doc, updateDoc } from 'firebase/firestore'
 import jsPDF from 'jspdf'
+import { Filesystem, Directory } from '@capacitor/filesystem'
+import { Share } from '@capacitor/share'
 import { useAuth } from '../context/AuthContext'
 import { db } from '../firebase'
-import { listenAchievements } from '../lib/data'
+import { listenAchievements, uploadToImgBB } from '../lib/data'
 import { STATIC_CATEGORIES } from '../lib/categories'
 
 export default function Profile() {
   const { user, profile, setProfile, logout } = useAuth()
   const [name, setName] = useState(profile?.name || '')
   const [saving, setSaving] = useState(false)
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [achievements, setAchievements] = useState([])
   const [showSettings, setShowSettings] = useState(false)
 
@@ -31,7 +34,22 @@ export default function Profile() {
     setSaving(false)
   }
 
-  const handlePdfExport = () => {
+  const handlePhotoChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingPhoto(true)
+    try {
+      const url = await uploadToImgBB(file)
+      await updateDoc(doc(db, 'users', user.uid), { photoUrl: url })
+      setProfile({ ...profile, photoUrl: url })
+    } catch (err) {
+      alert('Rasm yuklashda xatolik: ' + err.message)
+    } finally {
+      setUploadingPhoto(false)
+    }
+  }
+
+  const handlePdfExport = async () => {
     const pdf = new jsPDF()
     pdf.setFontSize(16)
     pdf.text('Ijtimoiy Faollik Portfolio', 14, 16)
@@ -57,7 +75,21 @@ export default function Profile() {
       y += 6
     })
 
-    pdf.save('yutuqlar.pdf')
+    try {
+      const base64 = pdf.output('datauristring').split(',')[1]
+      const fileName = `yutuqlar_${Date.now()}.pdf`
+      const result = await Filesystem.writeFile({
+        path: fileName,
+        data: base64,
+        directory: Directory.Cache
+      })
+      await Share.share({
+        title: 'Yutuqlar PDF',
+        url: result.uri
+      })
+    } catch (err) {
+      alert('PDF saqlashda xatolik: ' + err.message)
+    }
   }
 
   return (
@@ -68,7 +100,12 @@ export default function Profile() {
           {profile?.role === 'Administrator' && <span className="admin-badge">Admin</span>}
         </div>
         <div className="user-card">
-          <div className="user-avatar">{(profile?.name || 'F').charAt(0).toUpperCase()}</div>
+          <div className="user-avatar">
+            {profile?.photoUrl
+              ? <img src={profile.photoUrl} alt="" />
+              : (profile?.name || 'F').charAt(0).toUpperCase()
+            }
+          </div>
           <div>
             <p className="user-name">{profile?.name}</p>
             <p className="user-role">{profile?.role}</p>
@@ -104,6 +141,25 @@ export default function Profile() {
 
         {showSettings && (
           <div style={{ marginBottom: 16 }}>
+            <div className="form-group">
+              <label className="form-label">Profil rasmi</label>
+              <label style={{
+                display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer'
+              }}>
+                <div className="user-avatar" style={{ background: 'var(--color-primary)', width: 56, height: 56, fontSize: 22 }}>
+                  {profile?.photoUrl
+                    ? <img src={profile.photoUrl} alt="" />
+                    : (profile?.name || 'F').charAt(0).toUpperCase()
+                  }
+                </div>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-primary)', fontWeight: 600, fontSize: 13.5 }}>
+                  <Camera size={16} />
+                  {uploadingPhoto ? 'Yuklanmoqda...' : 'Rasm o\'zgartirish'}
+                </span>
+                <input type="file" accept="image/*" onChange={handlePhotoChange} style={{ display: 'none' }} disabled={uploadingPhoto} />
+              </label>
+            </div>
+
             <div className="form-group">
               <label className="form-label"><UserIcon size={14} style={{ verticalAlign: 'middle' }} /> Ism</label>
               <input className="form-input" value={name} onChange={e => setName(e.target.value)} />
