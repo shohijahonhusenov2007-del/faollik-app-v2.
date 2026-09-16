@@ -2,21 +2,20 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronRight, ImageOff } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { listenAchievements, listenCategories } from '../lib/data'
+import { listenAchievements } from '../lib/data'
+import { STATIC_CATEGORIES } from '../lib/categories'
 
 export default function Home() {
   const { user, profile } = useAuth()
   const [achievements, setAchievements] = useState([])
-  const [categories, setCategories] = useState([])
 
   useEffect(() => {
     if (!user) return
-    const unsub1 = listenAchievements(user.uid, setAchievements)
-    const unsub2 = listenCategories(user.uid, setCategories)
-    return () => { unsub1(); unsub2() }
+    const unsub = listenAchievements(user.uid, setAchievements)
+    return unsub
   }, [user])
 
-  const photoCount = achievements.filter(a => a.imageUrl).length
+  const photoCount = achievements.reduce((sum, a) => sum + (a.imageUrls?.length || 0), 0)
   const initial = (profile?.name || 'F').charAt(0).toUpperCase()
 
   return (
@@ -42,7 +41,7 @@ export default function Home() {
           <span className="stat-label">Yutuqlar</span>
         </div>
         <div className="stat-card stat-blue">
-          <span className="stat-number">{categories.length}</span>
+          <span className="stat-number">{STATIC_CATEGORIES.length}</span>
           <span className="stat-label">Kategoriyalar</span>
         </div>
         <div className="stat-card stat-purple">
@@ -65,8 +64,8 @@ export default function Home() {
         ) : (
           achievements.slice(0, 5).map(a => (
             <div key={a.id} className="achievement-card">
-              {a.imageUrl
-                ? <img src={a.imageUrl} className="achievement-thumb" alt={a.title} />
+              {a.imageUrls && a.imageUrls[0]
+                ? <img src={a.imageUrls[0]} className="achievement-thumb" alt={a.title} />
                 : <div className="achievement-thumb" />
               }
               <div className="achievement-info">

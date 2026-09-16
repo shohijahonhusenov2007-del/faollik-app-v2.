@@ -2,26 +2,22 @@ import {
   collection, addDoc, deleteDoc, doc, onSnapshot,
   query, orderBy, where, serverTimestamp
 } from 'firebase/firestore'
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
-import { db, storage } from '../firebase'
+import { db } from '../firebase'
 
-// ---------- Categories ----------
-export function listenCategories(uid, callback) {
-  const q = query(collection(db, 'categories'), where('uid', '==', uid), orderBy('createdAt', 'desc'))
-  return onSnapshot(q, (snap) => {
-    callback(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+const IMGBB_API_KEY = 'bd5716b1f393da686383990fabbd875e'
+
+async function uploadToImgBB(file) {
+  const formData = new FormData()
+  formData.append('image', file)
+  const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+    method: 'POST',
+    body: formData
   })
+  const json = await res.json()
+  if (!json.success) throw new Error('Rasm yuklashda xatolik')
+  return json.data.url
 }
 
-export async function addCategory(uid, name) {
-  return addDoc(collection(db, 'categories'), { uid, name, createdAt: serverTimestamp() })
-}
-
-export async function deleteCategory(id) {
-  return deleteDoc(doc(db, 'categories', id))
-}
-
-// ---------- Achievements ----------
 export function listenAchievements(uid, callback) {
   const q = query(collection(db, 'achievements'), where('uid', '==', uid), orderBy('createdAt', 'desc'))
   return onSnapshot(q, (snap) => {
@@ -31,38 +27,26 @@ export function listenAchievements(uid, callback) {
 
 export async function addAchievement(uid, { title, description, categoryId, categoryName, imageFiles, date }) {
   const imageUrls = []
-  const imagePaths = []
-
   const files = (imageFiles || []).slice(0, 3)
   for (const file of files) {
-    const imagePath = `achievements/${uid}/${Date.now()}_${file.name}`
-    const storageRef = ref(storage, imagePath)
-    await uploadBytes(storageRef, file)
-    const url = await getDownloadURL(storageRef)
+    const url = await uploadToImgBB(file)
     imageUrls.push(url)
-    imagePaths.push(imagePath)
   }
 
   return addDoc(collection(db, 'achievements'), {
     uid, title, description: description || '',
     categoryId: categoryId || null,
     categoryName: categoryName || null,
-    imageUrls, imagePaths,
+    imageUrls,
     date: date || new Date().toISOString().slice(0, 10),
     createdAt: serverTimestamp()
   })
 }
 
-export async function deleteAchievement(id, imagePaths) {
-  if (imagePaths && imagePaths.length) {
-    for (const p of imagePaths) {
-      try { await deleteObject(ref(storage, p)) } catch (e) { /* ignore */ }
-    }
-  }
+export async function deleteAchievement(id) {
   return deleteDoc(doc(db, 'achievements', id))
 }
 
-// ---------- Chat ----------
 export function listenChat(uid, callback) {
   const q = query(collection(db, 'chats', uid, 'messages'), orderBy('createdAt', 'asc'))
   return onSnapshot(q, (snap) => {
