@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { LogOut, User as UserIcon, Mail, Save, FileText, Settings, ShieldCheck } from 'lucide-react'
 import { doc, updateDoc } from 'firebase/firestore'
+import jsPDF from 'jspdf'
 import { useAuth } from '../context/AuthContext'
 import { db } from '../firebase'
 import { listenAchievements } from '../lib/data'
@@ -29,8 +31,37 @@ export default function Profile() {
     setSaving(false)
   }
 
+  const handlePdfExport = () => {
+    const pdf = new jsPDF()
+    pdf.setFontSize(16)
+    pdf.text('Ijtimoiy Faollik Portfolio', 14, 16)
+    pdf.setFontSize(11)
+    pdf.text(`Foydalanuvchi: ${profile?.name || ''}`, 14, 26)
+    pdf.text(`Jami yutuqlar: ${achievements.length}`, 14, 33)
+
+    let y = 46
+    pdf.setFontSize(12)
+    achievements.forEach((a, i) => {
+      if (y > 270) { pdf.addPage(); y = 20 }
+      pdf.setFont(undefined, 'bold')
+      pdf.text(`${i + 1}. ${a.title}`, 14, y)
+      pdf.setFont(undefined, 'normal')
+      y += 6
+      pdf.text(`Kategoriya: ${a.categoryName || '-'}    Sana: ${a.date || '-'}`, 14, y)
+      y += 6
+      if (a.description) {
+        const lines = pdf.splitTextToSize(a.description, 180)
+        pdf.text(lines, 14, y)
+        y += lines.length * 6
+      }
+      y += 6
+    })
+
+    pdf.save('yutuqlar.pdf')
+  }
+
   return (
-    <div>
+    <div className="flex-page">
       <div className="header-card">
         <div className="header-top-row">
           <h1 className="header-title">Profil</h1>
@@ -61,7 +92,7 @@ export default function Profile() {
       </div>
 
       <div className="page-content" style={{ paddingTop: 24 }}>
-        <button className="profile-menu-item" onClick={() => alert("Tez orada qo'shiladi")}>
+        <button className="profile-menu-item" onClick={handlePdfExport}>
           <FileText size={18} />
           PDF chiqarish
         </button>
@@ -89,10 +120,10 @@ export default function Profile() {
         )}
 
         {profile?.role === 'Administrator' && (
-          <button className="profile-menu-item admin-panel" onClick={() => alert("Tez orada qo'shiladi")}>
+          <Link to="/admin" className="profile-menu-item admin-panel" style={{ textDecoration: 'none' }}>
             <ShieldCheck size={18} />
             Admin panelga o'tish
-          </button>
+          </Link>
         )}
 
         <button className="profile-menu-item danger" onClick={logout}>

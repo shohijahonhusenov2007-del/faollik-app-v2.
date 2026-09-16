@@ -7,9 +7,11 @@ import BottomNav from './components/BottomNav'
 import AddAchievementModal from './components/AddAchievementModal'
 import Home from './pages/Home'
 import Achievements from './pages/Achievements'
+import AchievementDetail from './pages/AchievementDetail'
 import Chat from './pages/Chat'
 import Statistics from './pages/Statistics'
 import Profile from './pages/Profile'
+import AdminPanel from './pages/AdminPanel'
 import Login from './pages/Login'
 
 function AppShell() {
@@ -21,9 +23,11 @@ function AppShell() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/yutuqlar" element={<Achievements />} />
+        <Route path="/yutuqlar/:id" element={<AchievementDetail />} />
         <Route path="/chat" element={<Chat />} />
         <Route path="/statistika" element={<Statistics />} />
         <Route path="/profil" element={<Profile />} />
+        <Route path="/admin" element={<AdminPanel />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <BottomNav onAddClick={() => setShowAdd(true)} />

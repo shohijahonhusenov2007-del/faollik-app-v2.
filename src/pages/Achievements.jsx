@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Search, Trash2, ImageOff } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { listenAchievements, deleteAchievement } from '../lib/data'
@@ -20,9 +21,11 @@ export default function Achievements() {
     .filter(a => (filter ? a.categoryId === filter : true))
     .filter(a => (search ? a.title.toLowerCase().includes(search.toLowerCase()) : true))
 
-  const handleDelete = async (a) => {
+  const handleDelete = async (e, a) => {
+    e.preventDefault()
+    e.stopPropagation()
     if (confirm(`"${a.title}" o'chirilsinmi?`)) {
-      await deleteAchievement(a.id, a.imagePaths)
+      await deleteAchievement(a.id)
     }
   }
 
@@ -66,7 +69,12 @@ export default function Achievements() {
           </div>
         ) : (
           filtered.map(a => (
-            <div key={a.id} className="achievement-card">
+            <Link
+              key={a.id}
+              to={`/yutuqlar/${a.id}`}
+              className="achievement-card"
+              style={{ textDecoration: 'none', color: 'inherit' }}
+            >
               {a.imageUrls && a.imageUrls[0]
                 ? <img src={a.imageUrls[0]} className="achievement-thumb" alt={a.title} />
                 : <div className="achievement-thumb" />
@@ -79,10 +87,10 @@ export default function Achievements() {
                 <p className="achievement-meta">{a.date}</p>
                 {a.categoryName && <span className="category-pill">{a.categoryName}</span>}
               </div>
-              <button className="icon-btn" onClick={() => handleDelete(a)}>
+              <button className="icon-btn" onClick={(e) => handleDelete(e, a)}>
                 <Trash2 size={18} color="#DC2626" />
               </button>
-            </div>
+            </Link>
           ))
         )}
       </div>

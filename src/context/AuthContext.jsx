@@ -8,6 +8,8 @@ import {
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { auth, db } from '../firebase'
 
+const ADMIN_EMAIL = 'shohijahonhusenov2007@gmail.com'
+
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
@@ -24,9 +26,10 @@ export function AuthProvider({ children }) {
         if (snap.exists()) {
           setProfile(snap.data())
         } else {
+          const isAdmin = firebaseUser.email === ADMIN_EMAIL
           const newProfile = {
             name: firebaseUser.email?.split('@')[0] || 'Foydalanuvchi',
-            role: 'Administrator',
+            role: isAdmin ? 'Administrator' : 'Foydalanuvchi',
             createdAt: Date.now()
           }
           await setDoc(ref, newProfile)

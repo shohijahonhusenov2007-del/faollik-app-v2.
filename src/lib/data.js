@@ -25,6 +25,13 @@ export function listenAchievements(uid, callback) {
   })
 }
 
+export function listenAllAchievements(callback) {
+  const q = query(collection(db, 'achievements'), orderBy('createdAt', 'desc'))
+  return onSnapshot(q, (snap) => {
+    callback(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+  })
+}
+
 export async function addAchievement(uid, { title, description, categoryId, categoryName, imageFiles, date }) {
   const imageUrls = []
   const files = (imageFiles || []).slice(0, 3)
