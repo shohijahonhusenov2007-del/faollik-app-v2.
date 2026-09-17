@@ -5,6 +5,7 @@ import { STATIC_CATEGORIES } from './lib/categories'
 
 import BottomNav from './components/BottomNav'
 import AddAchievementModal from './components/AddAchievementModal'
+import UpdateBanner from './components/UpdateBanner'
 import Home from './pages/Home'
 import Achievements from './pages/Achievements'
 import AchievementDetail from './pages/AchievementDetail'
@@ -20,6 +21,7 @@ function AppShell() {
 
   return (
     <div className="app-shell">
+      <UpdateBanner />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/yutuqlar" element={<Achievements />} />

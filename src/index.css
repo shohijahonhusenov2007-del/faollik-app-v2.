@@ -791,3 +791,35 @@ body {
   margin-top: 0;
   flex: 1;
 }
+
+/* Update banner */
+.update-banner {
+  position: fixed;
+  top: env(safe-area-inset-top);
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 24px);
+  max-width: 456px;
+  background: var(--color-primary);
+  color: white;
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 500;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+  margin-top: 10px;
+}
+.update-banner-text { flex: 1; font-size: 13px; }
+.update-banner button {
+  background: white;
+  color: var(--color-primary);
+  border: none;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
