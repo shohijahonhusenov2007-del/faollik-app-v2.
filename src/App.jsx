@@ -9,7 +9,8 @@ import UpdateBanner from './components/UpdateBanner'
 import Home from './pages/Home'
 import Achievements from './pages/Achievements'
 import AchievementDetail from './pages/AchievementDetail'
-import Chat from './pages/Chat'
+import ChatList from './pages/ChatList'
+import ChatThread from './pages/ChatThread'
 import Statistics from './pages/Statistics'
 import Profile from './pages/Profile'
 import AdminPanel from './pages/AdminPanel'
@@ -26,7 +27,8 @@ function AppShell() {
         <Route path="/" element={<Home />} />
         <Route path="/yutuqlar" element={<Achievements />} />
         <Route path="/yutuqlar/:id" element={<AchievementDetail />} />
-        <Route path="/chat" element={<Chat />} />
+        <Route path="/chat" element={<ChatList />} />
+        <Route path="/chat/:id" element={<ChatThread />} />
         <Route path="/statistika" element={<Statistics />} />
         <Route path="/profil" element={<Profile />} />
         <Route path="/admin" element={<AdminPanel />} />
