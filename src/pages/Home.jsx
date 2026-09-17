@@ -26,7 +26,9 @@ export default function Home() {
           <span className="admin-badge">{profile?.role || 'Admin'}</span>
         </div>
         <Link to="/profil" className="user-card" style={{ textDecoration: 'none', color: 'white' }}>
-          <div className="user-avatar">{initial}</div>
+          <div className="user-avatar">
+            {profile?.photoUrl ? <img src={profile.photoUrl} alt="" /> : initial}
+          </div>
           <div style={{ flex: 1 }}>
             <p className="user-name">{profile?.name || 'Foydalanuvchi'}</p>
             <p className="user-role">{profile?.role || 'Administrator'}</p>
@@ -63,7 +65,7 @@ export default function Home() {
           </div>
         ) : (
           achievements.slice(0, 5).map(a => (
-            <div key={a.id} className="achievement-card">
+            <Link key={a.id} to={`/yutuqlar/${a.id}`} className="achievement-card" style={{ textDecoration: 'none', color: 'inherit' }}>
               {a.imageUrls && a.imageUrls[0]
                 ? <img src={a.imageUrls[0]} className="achievement-thumb" alt={a.title} />
                 : <div className="achievement-thumb" />
@@ -73,7 +75,7 @@ export default function Home() {
                 <p className="achievement-meta">{a.date}</p>
                 {a.categoryName && <span className="category-pill">{a.categoryName}</span>}
               </div>
-            </div>
+            </Link>
           ))
         )}
       </div>

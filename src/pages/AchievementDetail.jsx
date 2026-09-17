@@ -34,7 +34,28 @@ export default function AchievementDetail() {
 
   const handleSaveToGallery = async () => {
     try {
-      await Media.savePhoto({ path: lightboxUrl })
+      const albumName = 'Ijtimoiy Faollik'
+      let albumIdentifier = null
+      try {
+        const { albums } = await Media.getAlbums()
+        const found = albums.find(a => a.name === albumName)
+        if (found) {
+          albumIdentifier = found.identifier
+        } else {
+          await Media.createAlbum({ name: albumName })
+          const { albums: newAlbums } = await Media.getAlbums()
+          const created = newAlbums.find(a => a.name === albumName)
+          albumIdentifier = created ? created.identifier : null
+        }
+      } catch (albumErr) {
+        albumIdentifier = null
+      }
+
+      if (albumIdentifier) {
+        await Media.savePhoto({ path: lightboxUrl, albumIdentifier })
+      } else {
+        await Media.savePhoto({ path: lightboxUrl, albumIdentifier: albumName })
+      }
       alert('Rasm galereyaga saqlandi')
     } catch (err) {
       alert('Saqlashda xatolik: ' + err.message)
