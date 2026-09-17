@@ -1,14 +1,20 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Search, Trash2, ImageOff, SlidersHorizontal, X } from 'lucide-react'
+import { collection, getDocs } from 'firebase/firestore'
+import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
-import { listenAchievements, deleteAchievement } from '../lib/data'
+import { listenAchievements, listenAllAchievements, deleteAchievement } from '../lib/data'
 import { STATIC_CATEGORIES } from '../lib/categories'
 import CategoryBadge from '../components/CategoryBadge'
 
 export default function Achievements() {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
+  const isAdmin = profile?.role === 'Administrator'
   const [achievements, setAchievements] = useState([])
+  const [allAchievements, setAllAchievements] = useState([])
+  const [users, setUsers] = useState([])
+  const [viewMode, setViewMode] = useState('personal')
   const [filter, setFilter] = useState('')
   const [search, setSearch] = useState('')
   const [showFilterSheet, setShowFilterSheet] = useState(false)
@@ -22,7 +28,25 @@ export default function Achievements() {
     return unsub
   }, [user])
 
-  const filtered = achievements
+  useEffect(() => {
+    if (!isAdmin) return
+    const unsub = listenAllAchievements(setAllAchievements)
+    return unsub
+  }, [isAdmin])
+
+  useEffect(() => {
+    if (!isAdmin) return
+    const loadUsers = async () => {
+      const snap = await getDocs(collection(db, 'users'))
+      setUsers(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    }
+    loadUsers()
+  }, [isAdmin])
+
+  const authorName = (uid) => users.find(u => u.id === uid)?.name || ''
+  const sourceList = (isAdmin && viewMode === 'all') ? allAchievements : achievements
+
+  const filtered = sourceList
     .filter(a => (filter ? a.categoryId === filter : true))
     .filter(a => (search ? a.title.toLowerCase().includes(search.toLowerCase()) : true))
     .filter(a => (dateFrom ? a.date >= dateFrom : true))
@@ -54,6 +78,24 @@ export default function Achievements() {
         <div className="header-top-row" style={{ marginBottom: 0 }}>
           <h1 className="header-title">Yutuqlar</h1>
         </div>
+        {isAdmin && (
+          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+            <button
+              className={`filter-chip ${viewMode === 'personal' ? 'active' : ''}`}
+              style={{ flex: 1 }}
+              onClick={() => setViewMode('personal')}
+            >
+              Shaxsiy yutuqlar
+            </button>
+            <button
+              className={`filter-chip ${viewMode === 'all' ? 'active' : ''}`}
+              style={{ flex: 1 }}
+              onClick={() => setViewMode('all')}
+            >
+              Barcha yutuqlar
+            </button>
+          </div>
+        )}
         <div className="header-search-row">
           <div className="header-search">
             <Search size={16} />
@@ -114,7 +156,9 @@ export default function Achievements() {
                 {a.description && (
                   <p className="achievement-meta" style={{ marginBottom: 2 }}>{a.description}</p>
                 )}
-                <p className="achievement-meta">{a.date}</p>
+                <p className="achievement-meta">
+                  {a.date}{isAdmin && viewMode === 'all' && authorName(a.uid) ? ` • ${authorName(a.uid)}` : ''}
+                </p>
                 <CategoryBadge categoryId={a.categoryId} name={a.categoryName} />
               </div>
               <button className="icon-btn" onClick={(e) => handleDelete(e, a)}>

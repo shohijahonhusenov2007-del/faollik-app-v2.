@@ -1,20 +1,37 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronRight, ImageOff } from 'lucide-react'
+import { collection, getDocs } from 'firebase/firestore'
+import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
-import { listenAchievements } from '../lib/data'
+import { listenAchievements, listenAllAchievements } from '../lib/data'
 import { STATIC_CATEGORIES } from '../lib/categories'
 import CategoryBadge from '../components/CategoryBadge'
 
 export default function Home() {
   const { user, profile } = useAuth()
   const [achievements, setAchievements] = useState([])
+  const [users, setUsers] = useState([])
+  const isAdmin = profile?.role === 'Administrator'
 
   useEffect(() => {
     if (!user) return
-    const unsub = listenAchievements(user.uid, setAchievements)
+    const unsub = isAdmin
+      ? listenAllAchievements(setAchievements)
+      : listenAchievements(user.uid, setAchievements)
     return unsub
-  }, [user])
+  }, [user, isAdmin])
+
+  useEffect(() => {
+    if (!isAdmin) return
+    const loadUsers = async () => {
+      const snap = await getDocs(collection(db, 'users'))
+      setUsers(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    }
+    loadUsers()
+  }, [isAdmin])
+
+  const authorName = (uid) => users.find(u => u.id === uid)?.name || ''
 
   const photoCount = achievements.reduce((sum, a) => sum + (a.imageUrls?.length || 0), 0)
   const initial = (profile?.name || 'F').charAt(0).toUpperCase()
@@ -73,7 +90,9 @@ export default function Home() {
               }
               <div className="achievement-info">
                 <p className="achievement-title">{a.title}</p>
-                <p className="achievement-meta">{a.date}</p>
+                <p className="achievement-meta">
+                  {a.date}{isAdmin && authorName(a.uid) ? ` • ${authorName(a.uid)}` : ''}
+                </p>
                 <CategoryBadge categoryId={a.categoryId} name={a.categoryName} />
               </div>
             </Link>
