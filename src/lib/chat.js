@@ -26,6 +26,26 @@ export async function getOrCreateConversation(uid1, name1, uid2, name2) {
   return convId
 }
 
+export async function createGroupConversation(memberIds, memberNames, groupName, creatorId) {
+  const typing = {}
+  const lastRead = {}
+  memberIds.forEach(id => { typing[id] = false; lastRead[id] = null })
+  const ref = await addDoc(collection(db, 'conversations'), {
+    participants: memberIds,
+    names: memberNames,
+    isGroup: true,
+    groupName,
+    lastMessage: '',
+    lastMessageAt: serverTimestamp(),
+    lastSenderId: null,
+    typing,
+    lastRead,
+    createdBy: creatorId,
+    createdAt: serverTimestamp()
+  })
+  return ref.id
+}
+
 export function listenConversations(uid, callback) {
   const q = query(collection(db, 'conversations'), where('participants', 'array-contains', uid))
   return onSnapshot(q, (snap) => {

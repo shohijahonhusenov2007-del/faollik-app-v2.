@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, Navigate } from 'react-router-dom'
-import { ArrowLeft, Trash2 } from 'lucide-react'
+import { ArrowLeft, Trash2, FileDown } from 'lucide-react'
 import { collection, getDocs } from 'firebase/firestore'
+import jsPDF from 'jspdf'
+import { Filesystem, Directory } from '@capacitor/filesystem'
+import { Share } from '@capacitor/share'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import { listenAllAchievements, deleteAchievement } from '../lib/data'
@@ -38,6 +41,51 @@ export default function AdminPanel() {
 
   const userName = (uid) => users.find(u => u.id === uid)?.name || '-'
 
+  const handlePdfExport = async () => {
+    const pdf = new jsPDF()
+    pdf.setFontSize(16)
+    pdf.text('Ijtimoiy Faollik Portfolio', 14, 16)
+    pdf.setFontSize(11)
+    pdf.text('Barcha foydalanuvchilar yutuqlari (Admin hisobot)', 14, 24)
+    pdf.text(`Jami yutuqlar: ${achievements.length}    Jami foydalanuvchilar: ${users.length}`, 14, 31)
+
+    let y = 44
+    pdf.setFontSize(12)
+    achievements.forEach((a, i) => {
+      if (y > 270) { pdf.addPage(); y = 20 }
+      pdf.setFont(undefined, 'bold')
+      pdf.text(`${i + 1}. ${a.title}`, 14, y)
+      pdf.setFont(undefined, 'normal')
+      y += 6
+      pdf.text(`Foydalanuvchi: ${userName(a.uid)}`, 14, y)
+      y += 6
+      pdf.text(`Kategoriya: ${a.categoryName || '-'}    Sana: ${a.date || '-'}`, 14, y)
+      y += 6
+      if (a.description) {
+        const lines = pdf.splitTextToSize(a.description, 180)
+        pdf.text(lines, 14, y)
+        y += lines.length * 6
+      }
+      y += 6
+    })
+
+    try {
+      const base64 = pdf.output('datauristring').split(',')[1]
+      const fileName = `admin_yutuqlar_${Date.now()}.pdf`
+      const result = await Filesystem.writeFile({
+        path: fileName,
+        data: base64,
+        directory: Directory.Cache
+      })
+      await Share.share({
+        title: 'Barcha yutuqlar PDF',
+        url: result.uri
+      })
+    } catch (err) {
+      alert('PDF saqlashda xatolik: ' + err.message)
+    }
+  }
+
   return (
     <div className="flex-page">
       <div className="fullpage-header">
@@ -60,6 +108,11 @@ export default function AdminPanel() {
             Foydalanuvchilar
           </button>
         </div>
+
+        <button className="profile-menu-item" style={{ marginBottom: 16 }} onClick={handlePdfExport}>
+          <FileDown size={18} />
+          PDF chiqarish (barcha yutuqlar)
+        </button>
 
         {tab === 'achievements' && (
           <>
@@ -120,7 +173,7 @@ export default function AdminPanel() {
                 </thead>
                 <tbody>
                   {users.map(u => (
-                    <tr key={u.id}>
+                    <tr key={u.id} onClick={() => navigate(`/admin/foydalanuvchi/${u.id}`)} style={{ cursor: 'pointer' }}>
                       <td>{u.name || '-'}</td>
                       <td>{u.role || '-'}</td>
                       <td>{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '-'}</td>

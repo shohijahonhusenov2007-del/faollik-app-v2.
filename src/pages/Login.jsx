@@ -39,18 +39,21 @@ export default function Login() {
           {isRegister ? 'Yangi hisob yarating' : 'Hisobingizga kiring'}
         </p>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} autoComplete="on">
           <div className="form-group">
             <label className="form-label">Email</label>
             <input
-              type="email" className="form-input" value={email}
+              type="email" name="email" autoComplete="username"
+              className="form-input" value={email}
               onChange={e => setEmail(e.target.value)} required
             />
           </div>
           <div className="form-group">
             <label className="form-label">Parol</label>
             <input
-              type="password" className="form-input" value={password}
+              type="password" name="password"
+              autoComplete={isRegister ? 'new-password' : 'current-password'}
+              className="form-input" value={password}
               onChange={e => setPassword(e.target.value)} required
             />
           </div>
@@ -60,16 +63,14 @@ export default function Login() {
           </button>
         </form>
 
-        <p style={{ textAlign: 'center', marginTop: 16, fontSize: 13 }}>
-          {isRegister ? 'Hisobingiz bormi?' : 'Hisobingiz yo\'qmi?'}{' '}
-          <button
-            type="button"
-            onClick={() => { setIsRegister(!isRegister); setError('') }}
-            style={{ background: 'none', border: 'none', color: 'var(--color-primary, #1B3A6B)', fontWeight: 600, cursor: 'pointer' }}
-          >
-            {isRegister ? 'Kirish' : 'Ro\'yxatdan o\'tish'}
-          </button>
-        </p>
+        <button
+          type="button"
+          className="btn-secondary"
+          style={{ width: '100%', marginTop: 12 }}
+          onClick={() => { setIsRegister(!isRegister); setError('') }}
+        >
+          {isRegister ? 'Kirish oynasiga qaytish' : 'Ro\'yxatdan o\'tish'}
+        </button>
       </div>
     </div>
   )

@@ -54,10 +54,19 @@ export default function ChatThread() {
     }
   }, [convId, user])
 
+  const isGroup = conversation?.isGroup
   const otherId = conversation?.participants.find(id => id !== user?.uid)
   const otherName = conversation?.names?.[otherId] || 'Foydalanuvchi'
   const isOtherTyping = conversation?.typing?.[otherId]
   const otherLastRead = conversation?.lastRead?.[otherId]
+  const displayName = isGroup ? (conversation?.groupName || 'Guruh') : otherName
+  const groupTypingText = isGroup
+    ? Object.entries(conversation?.typing || {})
+        .filter(([uid, val]) => val && uid !== user?.uid)
+        .map(([uid]) => conversation?.names?.[uid] || 'Kimdir')
+        .join(', ')
+    : ''
+  const senderName = (uid) => conversation?.names?.[uid] || 'Foydalanuvchi'
 
   const handleTextChange = (val) => {
     setText(val)
@@ -113,23 +122,30 @@ export default function ChatThread() {
     <div className="flex-page">
       <div className="chat-thread-header">
         <button className="fullpage-back" onClick={() => navigate('/chat')}><ArrowLeft size={20} /></button>
-        <div className="chat-list-avatar">{otherName.charAt(0).toUpperCase()}</div>
+        <div className="chat-list-avatar">{displayName.charAt(0).toUpperCase()}</div>
         <div>
-          <p className="chat-thread-name">{otherName}</p>
-          <p className="chat-thread-status">{isOtherTyping ? 'yozmoqda...' : ''}</p>
+          <p className="chat-thread-name">{displayName}</p>
+          <p className="chat-thread-status">
+            {isGroup ? (groupTypingText ? `${groupTypingText} yozmoqda...` : '') : (isOtherTyping ? 'yozmoqda...' : '')}
+          </p>
         </div>
       </div>
 
       <div className="chat-messages-wrap">
         {messages.map(m => {
           const mine = m.senderId === user.uid
-          const isRead = mine && otherLastRead && m.createdAt && otherLastRead.toMillis() >= m.createdAt.toMillis()
+          const isRead = mine && !isGroup && otherLastRead && m.createdAt && otherLastRead.toMillis() >= m.createdAt.toMillis()
           return (
             <div key={m.id} className={`chat-bubble-row ${mine ? 'mine' : ''}`}>
               <div
                 className="chat-bubble-content"
                 onClick={() => mine && !m.deleted && setActionMsg(actionMsg === m.id ? null : m.id)}
               >
+                {isGroup && !mine && !m.deleted && (
+                  <span style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: 'var(--color-primary)', marginBottom: 2 }}>
+                    {senderName(m.senderId)}
+                  </span>
+                )}
                 {m.deleted ? (
                   <span className="chat-bubble-deleted">Xabar o'chirildi</span>
                 ) : (
@@ -141,7 +157,8 @@ export default function ChatThread() {
                 <div className="chat-bubble-meta">
                   {m.edited && !m.deleted && <span>tahrirlangan</span>}
                   <span>{formatTime(m.createdAt)}</span>
-                  {mine && !m.deleted && (isRead ? <CheckCheck size={13} /> : <Check size={13} />)}
+                  {mine && !m.deleted && !isGroup && (isRead ? <CheckCheck size={13} /> : <Check size={13} />)}
+                  {mine && !m.deleted && isGroup && <Check size={13} />}
                 </div>
 
                 {actionMsg === m.id && (

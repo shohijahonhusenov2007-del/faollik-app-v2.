@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { collection, getDocs } from 'firebase/firestore'
-import { MessageCircle } from 'lucide-react'
+import { MessageCircle, Users, Plus, X, Check } from 'lucide-react'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
-import { listenConversations, getOrCreateConversation } from '../lib/chat'
+import { listenConversations, getOrCreateConversation, createGroupConversation } from '../lib/chat'
 
 function formatTime(ts) {
   if (!ts?.toMillis) return ''
@@ -21,6 +21,10 @@ export default function ChatList() {
   const navigate = useNavigate()
   const [conversations, setConversations] = useState([])
   const [users, setUsers] = useState([])
+  const [showGroupSheet, setShowGroupSheet] = useState(false)
+  const [groupName, setGroupName] = useState('')
+  const [selectedIds, setSelectedIds] = useState([])
+  const [creating, setCreating] = useState(false)
 
   useEffect(() => {
     if (!user) return
@@ -37,7 +41,7 @@ export default function ChatList() {
   }, [user])
 
   const conversationUserIds = new Set(
-    conversations.flatMap(c => c.participants).filter(id => id !== user?.uid)
+    conversations.filter(c => !c.isGroup).flatMap(c => c.participants).filter(id => id !== user?.uid)
   )
   const newContacts = users.filter(u => !conversationUserIds.has(u.id))
 
@@ -50,11 +54,52 @@ export default function ChatList() {
   const otherName = (conv) => conv.names?.[otherOf(conv)] || 'Foydalanuvchi'
   const otherUser = (conv) => users.find(u => u.id === otherOf(conv))
 
+  const toggleSelect = (uid) => {
+    setSelectedIds(ids => ids.includes(uid) ? ids.filter(i => i !== uid) : [...ids, uid])
+  }
+
+  const closeGroupSheet = () => {
+    setShowGroupSheet(false)
+    setGroupName('')
+    setSelectedIds([])
+  }
+
+  const handleCreateGroup = async () => {
+    if (!groupName.trim() || selectedIds.length === 0) return
+    setCreating(true)
+    try {
+      const memberIds = [user.uid, ...selectedIds]
+      const memberNames = { [user.uid]: profile?.name || '' }
+      selectedIds.forEach(id => {
+        const u = users.find(uu => uu.id === id)
+        memberNames[id] = u?.name || ''
+      })
+      const convId = await createGroupConversation(memberIds, memberNames, groupName.trim(), user.uid)
+      closeGroupSheet()
+      navigate(`/chat/${convId}`)
+    } catch (err) {
+      alert('Xatolik: ' + err.message)
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  const groupTypingText = (conv) => {
+    const typingNames = Object.entries(conv.typing || {})
+      .filter(([uid, val]) => val && uid !== user?.uid)
+      .map(([uid]) => conv.names?.[uid] || 'Kimdir')
+    if (typingNames.length === 0) return null
+    return `${typingNames.join(', ')} yozmoqda...`
+  }
+
   return (
     <div className="flex-page">
       <div className="header-card" style={{ paddingBottom: 16 }}>
         <div className="header-top-row" style={{ marginBottom: 0 }}>
           <h1 className="header-title">Chat</h1>
+          <button className="icon-only-btn" onClick={() => setShowGroupSheet(true)} title="Yangi guruh">
+            <Plus size={20} />
+          </button>
         </div>
       </div>
 
@@ -70,6 +115,23 @@ export default function ChatList() {
           <>
             <div className="section-header" style={{ marginTop: 0 }}><h2>Suhbatlar</h2></div>
             {conversations.map(conv => {
+              if (conv.isGroup) {
+                const typingText = groupTypingText(conv)
+                return (
+                  <Link key={conv.id} to={`/chat/${conv.id}`} className="chat-list-item">
+                    <div className="chat-list-avatar">
+                      <Users size={18} />
+                    </div>
+                    <div className="chat-list-info">
+                      <p className="chat-list-name">{conv.groupName || 'Guruh'}</p>
+                      <p className="chat-list-preview">
+                        {typingText || conv.lastMessage || 'Suhbatni boshlang'}
+                      </p>
+                    </div>
+                    <span className="chat-list-time">{formatTime(conv.lastMessageAt)}</span>
+                  </Link>
+                )
+              }
               const ou = otherUser(conv)
               return (
                 <Link key={conv.id} to={`/chat/${conv.id}`} className="chat-list-item">
@@ -106,6 +168,62 @@ export default function ChatList() {
           </>
         )}
       </div>
+
+      {showGroupSheet && (
+        <div className="sheet-overlay" onClick={closeGroupSheet}>
+          <div className="sheet-panel" onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 16px 12px' }}>
+              <h3 style={{ margin: 0, fontSize: 16 }}>Yangi guruh</h3>
+              <button className="icon-only-btn" onClick={closeGroupSheet}><X size={18} /></button>
+            </div>
+
+            <div style={{ padding: '0 16px 12px' }}>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="Guruh nomi"
+                value={groupName}
+                onChange={e => setGroupName(e.target.value)}
+              />
+            </div>
+
+            <p style={{ padding: '0 16px 8px', fontSize: 12.5, color: 'var(--color-text-muted)' }}>
+              A'zolarni tanlang ({selectedIds.length} tanlandi)
+            </p>
+
+            <div style={{ maxHeight: '40vh', overflowY: 'auto' }}>
+              {users.map(u => {
+                const checked = selectedIds.includes(u.id)
+                return (
+                  <div key={u.id} className="sheet-item" style={{ cursor: 'pointer' }} onClick={() => toggleSelect(u.id)}>
+                    <div className="chat-list-avatar" style={{ width: 32, height: 32, fontSize: 13 }}>
+                      {u.photoUrl ? <img src={u.photoUrl} alt="" /> : (u.name || 'F').charAt(0).toUpperCase()}
+                    </div>
+                    <span style={{ flex: 1, marginLeft: 10 }}>{u.name}</span>
+                    <div className={`sheet-radio ${checked ? 'checked' : ''}`}>
+                      {checked && <Check size={12} color="white" style={{ position: 'relative', top: -1 }} />}
+                    </div>
+                  </div>
+                )
+              })}
+              {users.length === 0 && (
+                <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 16 }}>Foydalanuvchi topilmadi</p>
+              )}
+            </div>
+
+            <div style={{ padding: 16 }}>
+              <button
+                className="btn-primary"
+                style={{ width: '100%' }}
+                disabled={!groupName.trim() || selectedIds.length === 0 || creating}
+                onClick={handleCreateGroup}
+              >
+                {creating ? 'Yaratilmoqda...' : 'Guruh yaratish'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
