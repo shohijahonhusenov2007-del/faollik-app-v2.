@@ -8,6 +8,7 @@ import { Share } from '@capacitor/share'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import { listenAllAchievements, deleteAchievement } from '../lib/data'
+import CategoryBadge from '../components/CategoryBadge'
 
 export default function AdminPanel() {
   const { profile } = useAuth()
@@ -136,7 +137,7 @@ export default function AdminPanel() {
                     <tr key={a.id}>
                       <td>{userName(a.uid)}</td>
                       <td>{a.title}</td>
-                      <td>{a.categoryName || '-'}</td>
+                      <td><CategoryBadge categoryId={a.categoryId} name={a.categoryName || '-'} /></td>
                       <td>{a.date}</td>
                       <td>{a.imageUrls?.length || 0}</td>
                       <td>

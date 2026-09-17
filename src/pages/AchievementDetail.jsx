@@ -7,6 +7,7 @@ import { Media } from '@capacitor-community/media'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import { deleteAchievement } from '../lib/data'
+import CategoryBadge from '../components/CategoryBadge'
 
 export default function AchievementDetail() {
   const { id } = useParams()
@@ -107,11 +108,11 @@ export default function AchievementDetail() {
 
       <div className="detail-content">
         <h1 className="detail-title">{achievement.title}</h1>
-        {achievement.categoryName && (
-          <span className="category-pill" style={{ marginBottom: 12, display: 'inline-block' }}>
-            {achievement.categoryName}
-          </span>
-        )}
+        <CategoryBadge
+          categoryId={achievement.categoryId}
+          name={achievement.categoryName}
+          style={{ marginBottom: 12, display: 'inline-block' }}
+        />
         <div className="detail-meta-row">
           <Calendar size={14} /> {achievement.date}
         </div>

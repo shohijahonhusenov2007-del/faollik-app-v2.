@@ -5,3 +5,8 @@ export const STATIC_CATEGORIES = [
   { id: 'tanlov', name: "Tanlov va musobaqalar", color: '#EF4444' },
   { id: 'sport', name: "Sport bilan shug'ullanishi", color: '#22C55E' },
 ]
+
+export function getCategoryColor(categoryId) {
+  const found = STATIC_CATEGORIES.find(c => c.id === categoryId)
+  return found ? found.color : '#6C5CE7'
+}

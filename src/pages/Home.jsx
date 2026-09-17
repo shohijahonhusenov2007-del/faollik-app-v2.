@@ -4,6 +4,7 @@ import { ChevronRight, ImageOff } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { listenAchievements } from '../lib/data'
 import { STATIC_CATEGORIES } from '../lib/categories'
+import CategoryBadge from '../components/CategoryBadge'
 
 export default function Home() {
   const { user, profile } = useAuth()
@@ -73,7 +74,7 @@ export default function Home() {
               <div className="achievement-info">
                 <p className="achievement-title">{a.title}</p>
                 <p className="achievement-meta">{a.date}</p>
-                {a.categoryName && <span className="category-pill">{a.categoryName}</span>}
+                <CategoryBadge categoryId={a.categoryId} name={a.categoryName} />
               </div>
             </Link>
           ))

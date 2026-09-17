@@ -4,6 +4,7 @@ import { Search, Trash2, ImageOff, SlidersHorizontal, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { listenAchievements, deleteAchievement } from '../lib/data'
 import { STATIC_CATEGORIES } from '../lib/categories'
+import CategoryBadge from '../components/CategoryBadge'
 
 export default function Achievements() {
   const { user } = useAuth()
@@ -114,7 +115,7 @@ export default function Achievements() {
                   <p className="achievement-meta" style={{ marginBottom: 2 }}>{a.description}</p>
                 )}
                 <p className="achievement-meta">{a.date}</p>
-                {a.categoryName && <span className="category-pill">{a.categoryName}</span>}
+                <CategoryBadge categoryId={a.categoryId} name={a.categoryName} />
               </div>
               <button className="icon-btn" onClick={(e) => handleDelete(e, a)}>
                 <Trash2 size={18} color="#DC2626" />

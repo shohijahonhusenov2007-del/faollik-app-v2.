@@ -5,6 +5,7 @@ import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import { listenAchievements, deleteAchievement } from '../lib/data'
+import CategoryBadge from '../components/CategoryBadge'
 
 export default function AdminUserDetail() {
   const { uid } = useParams()
@@ -73,7 +74,7 @@ export default function AdminUserDetail() {
                   {achievements.map(a => (
                     <tr key={a.id}>
                       <td>{a.title}</td>
-                      <td>{a.categoryName || '-'}</td>
+                      <td><CategoryBadge categoryId={a.categoryId} name={a.categoryName || '-'} /></td>
                       <td>{a.date}</td>
                       <td>{a.imageUrls?.length || 0}</td>
                       <td>

@@ -11,26 +11,43 @@ export default function UpdateBanner() {
   const [progressText, setProgressText] = useState('')
 
   useEffect(() => {
+    let cancelled = false
+
     const check = async () => {
       try {
-        const res = await fetch(REPO_API)
+        const res = await fetch(REPO_API, { cache: 'no-store' })
         if (!res.ok) return
         const release = await res.json()
         const versionAsset = release.assets?.find(a => a.name === 'version.json')
         const apkAsset = release.assets?.find(a => a.name === 'app-debug.apk')
         if (!versionAsset || !apkAsset) return
 
-        const versionRes = await fetch(versionAsset.browser_download_url)
+        const versionRes = await fetch(versionAsset.browser_download_url, { cache: 'no-store' })
         const versionData = await versionRes.json()
 
-        if (versionData.build > CURRENT_BUILD) {
+        if (!cancelled && versionData.build > CURRENT_BUILD) {
           setUpdateInfo({ build: versionData.build, apkUrl: apkAsset.browser_download_url })
         }
       } catch (err) {
         // silently ignore — no internet or GitHub unreachable
       }
     }
+
     check()
+    const interval = setInterval(check, 60000)
+
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') check()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', check)
+
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', check)
+    }
   }, [])
 
   const handleUpdate = async () => {
