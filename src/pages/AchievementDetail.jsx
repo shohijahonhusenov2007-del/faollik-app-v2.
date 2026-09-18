@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Pencil, Trash2, Calendar, User as UserIcon, X, Download, Share2, Heart } from 'lucide-react'
+import { ArrowLeft, Pencil, Trash2, Calendar, User as UserIcon, X, Download, Share2, Heart, Send, MessageCircle } from 'lucide-react'
 import { doc, getDoc } from 'firebase/firestore'
 import { Share } from '@capacitor/share'
 import { Media } from '@capacitor-community/media'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
-import { deleteAchievement, toggleLike } from '../lib/data'
+import { deleteAchievement, toggleLike, listenComments, addComment } from '../lib/data'
 import CategoryBadge from '../components/CategoryBadge'
 
 export default function AchievementDetail() {
@@ -16,6 +16,9 @@ export default function AchievementDetail() {
   const [achievement, setAchievement] = useState(null)
   const [loading, setLoading] = useState(true)
   const [lightboxUrl, setLightboxUrl] = useState(null)
+  const [comments, setComments] = useState([])
+  const [commentText, setCommentText] = useState('')
+  const [sendingComment, setSendingComment] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -25,6 +28,24 @@ export default function AchievementDetail() {
     }
     load()
   }, [id])
+
+  useEffect(() => {
+    const unsub = listenComments(id, setComments)
+    return unsub
+  }, [id])
+
+  const handleAddComment = async () => {
+    if (!commentText.trim()) return
+    setSendingComment(true)
+    try {
+      await addComment(id, user.uid, profile?.name || 'Foydalanuvchi', commentText.trim())
+      setCommentText('')
+    } catch (err) {
+      alert('Xatolik: ' + err.message)
+    } finally {
+      setSendingComment(false)
+    }
+  }
 
   const handleDelete = async () => {
     if (confirm(`"${achievement.title}" o'chirilsinmi?`)) {
@@ -167,6 +188,39 @@ export default function AchievementDetail() {
             </div>
           </>
         )}
+
+        <h2 style={{ fontSize: 16, fontWeight: 700, marginTop: 24, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <MessageCircle size={16} />
+          Izohlar ({comments.length})
+        </h2>
+
+        <div style={{ marginTop: 10 }}>
+          {comments.length === 0 ? (
+            <p style={{ color: 'var(--color-text-muted)', fontSize: 13.5 }}>Hali izoh yo'q</p>
+          ) : (
+            comments.map(c => (
+              <div key={c.id} style={{ marginBottom: 12, paddingBottom: 12, borderBottom: '1px solid var(--color-border)' }}>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--color-primary)' }}>{c.name}</p>
+                <p style={{ margin: '2px 0 0', fontSize: 14 }}>{c.text}</p>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, marginTop: 8, marginBottom: 20 }}>
+          <input
+            type="text"
+            className="form-input"
+            placeholder="Izoh yozing..."
+            value={commentText}
+            onChange={e => setCommentText(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleAddComment()}
+            style={{ flex: 1 }}
+          />
+          <button className="icon-only-btn" onClick={handleAddComment} disabled={sendingComment} style={{ flexShrink: 0 }}>
+            <Send size={18} />
+          </button>
+        </div>
       </div>
 
       {lightboxUrl && (

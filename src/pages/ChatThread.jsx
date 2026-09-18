@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { doc, onSnapshot } from 'firebase/firestore'
-import { ArrowLeft, Send, Image as ImageIcon, Check, CheckCheck, X, MoreVertical } from 'lucide-react'
+import { doc, onSnapshot, collection, getDocs } from 'firebase/firestore'
+import { ArrowLeft, Send, Image as ImageIcon, Check, CheckCheck, X, Users, UserPlus, UserMinus, LogOut } from 'lucide-react'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import {
-  listenMessages, sendMessage, editMessage, deleteMessage, setTyping, markRead
+  listenMessages, sendMessage, editMessage, deleteMessage, setTyping, markRead,
+  addGroupMembers, removeGroupMember
 } from '../lib/chat'
 
 function formatTime(ts) {
@@ -25,6 +26,10 @@ export default function ChatThread() {
   const [sending, setSending] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [actionMsg, setActionMsg] = useState(null)
+  const [showGroupInfo, setShowGroupInfo] = useState(false)
+  const [showAddMembers, setShowAddMembers] = useState(false)
+  const [allUsers, setAllUsers] = useState([])
+  const [selectedNew, setSelectedNew] = useState([])
   const typingTimeout = useRef(null)
   const bottomRef = useRef(null)
 
@@ -53,6 +58,14 @@ export default function ChatThread() {
       if (user && convId) setTyping(convId, user.uid, false)
     }
   }, [convId, user])
+
+  useEffect(() => {
+    const loadUsers = async () => {
+      const snap = await getDocs(collection(db, 'users'))
+      setAllUsers(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    }
+    loadUsers()
+  }, [])
 
   const isGroup = conversation?.isGroup
   const otherId = conversation?.participants.find(id => id !== user?.uid)
@@ -118,16 +131,52 @@ export default function ChatThread() {
     setActionMsg(null)
   }
 
+  const toggleSelectNew = (uid) => {
+    setSelectedNew(ids => ids.includes(uid) ? ids.filter(i => i !== uid) : [...ids, uid])
+  }
+
+  const handleAddMembers = async () => {
+    if (selectedNew.length === 0) return
+    const names = {}
+    selectedNew.forEach(id => {
+      names[id] = allUsers.find(u => u.id === id)?.name || ''
+    })
+    await addGroupMembers(convId, selectedNew, names)
+    setSelectedNew([])
+    setShowAddMembers(false)
+  }
+
+  const handleRemoveMember = async (uid) => {
+    const name = conversation?.names?.[uid] || 'Foydalanuvchi'
+    if (confirm(`${name} guruhdan chiqarilsinmi?`)) {
+      await removeGroupMember(convId, uid)
+    }
+  }
+
+  const handleLeaveGroup = async () => {
+    if (confirm("Guruhdan chiqmoqchimisiz?")) {
+      await removeGroupMember(convId, user.uid)
+      navigate('/chat')
+    }
+  }
+
   return (
     <div className="flex-page">
       <div className="chat-thread-header">
         <button className="fullpage-back" onClick={() => navigate('/chat')}><ArrowLeft size={20} /></button>
-        <div className="chat-list-avatar">{displayName.charAt(0).toUpperCase()}</div>
-        <div>
-          <p className="chat-thread-name">{displayName}</p>
-          <p className="chat-thread-status">
-            {isGroup ? (groupTypingText ? `${groupTypingText} yozmoqda...` : '') : (isOtherTyping ? 'yozmoqda...' : '')}
-          </p>
+        <div
+          style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, cursor: isGroup ? 'pointer' : 'default' }}
+          onClick={() => isGroup && setShowGroupInfo(true)}
+        >
+          <div className="chat-list-avatar">
+            {isGroup ? <Users size={16} /> : displayName.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <p className="chat-thread-name">{displayName}</p>
+            <p className="chat-thread-status">
+              {isGroup ? (groupTypingText ? `${groupTypingText} yozmoqda...` : `${conversation?.participants?.length || 0} a'zo`) : (isOtherTyping ? 'yozmoqda...' : '')}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -221,6 +270,92 @@ export default function ChatThread() {
           <Send size={17} />
         </button>
       </div>
+
+      {showGroupInfo && isGroup && (
+        <div className="sheet-overlay" onClick={() => { setShowGroupInfo(false); setShowAddMembers(false) }}>
+          <div className="sheet-panel" onClick={e => e.stopPropagation()}>
+            {!showAddMembers ? (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 16px 12px' }}>
+                  <h3 style={{ margin: 0, fontSize: 16 }}>{conversation?.groupName || 'Guruh'}</h3>
+                  <button className="icon-only-btn" onClick={() => setShowGroupInfo(false)}><X size={18} /></button>
+                </div>
+
+                <button
+                  className="profile-menu-item"
+                  style={{ margin: '0 16px 12px', width: 'calc(100% - 32px)' }}
+                  onClick={() => setShowAddMembers(true)}
+                >
+                  <UserPlus size={18} />
+                  A'zo qo'shish
+                </button>
+
+                <p style={{ padding: '0 16px 8px', fontSize: 12.5, color: 'var(--color-text-muted)' }}>
+                  A'zolar ({conversation?.participants?.length || 0})
+                </p>
+
+                <div style={{ maxHeight: '40vh', overflowY: 'auto' }}>
+                  {(conversation?.participants || []).map(uid => (
+                    <div key={uid} className="sheet-item">
+                      <div className="chat-list-avatar" style={{ width: 32, height: 32, fontSize: 13 }}>
+                        {(conversation?.names?.[uid] || 'F').charAt(0).toUpperCase()}
+                      </div>
+                      <span style={{ flex: 1, marginLeft: 10 }}>
+                        {conversation?.names?.[uid] || 'Foydalanuvchi'}{uid === user.uid ? ' (siz)' : ''}
+                      </span>
+                      {uid !== user.uid && (
+                        <button className="icon-btn" onClick={() => handleRemoveMember(uid)}>
+                          <UserMinus size={16} color="#DC2626" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ padding: 16 }}>
+                  <button className="profile-menu-item danger" onClick={handleLeaveGroup}>
+                    <LogOut size={18} />
+                    Guruhdan chiqish
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 16px 12px' }}>
+                  <h3 style={{ margin: 0, fontSize: 16 }}>A'zo qo'shish</h3>
+                  <button className="icon-only-btn" onClick={() => setShowAddMembers(false)}><X size={18} /></button>
+                </div>
+
+                <div style={{ maxHeight: '45vh', overflowY: 'auto' }}>
+                  {allUsers.filter(u => !(conversation?.participants || []).includes(u.id)).map(u => {
+                    const checked = selectedNew.includes(u.id)
+                    return (
+                      <div key={u.id} className="sheet-item" style={{ cursor: 'pointer' }} onClick={() => toggleSelectNew(u.id)}>
+                        <div className="chat-list-avatar" style={{ width: 32, height: 32, fontSize: 13 }}>
+                          {(u.name || 'F').charAt(0).toUpperCase()}
+                        </div>
+                        <span style={{ flex: 1, marginLeft: 10 }}>{u.name}</span>
+                        <div className={`sheet-radio ${checked ? 'checked' : ''}`}>
+                          {checked && <Check size={12} color="white" style={{ position: 'relative', top: -1 }} />}
+                        </div>
+                      </div>
+                    )
+                  })}
+                  {allUsers.filter(u => !(conversation?.participants || []).includes(u.id)).length === 0 && (
+                    <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 16 }}>Qo'shiladigan foydalanuvchi yo'q</p>
+                  )}
+                </div>
+
+                <div style={{ padding: 16 }}>
+                  <button className="btn-primary" style={{ width: '100%' }} disabled={selectedNew.length === 0} onClick={handleAddMembers}>
+                    Qo'shish ({selectedNew.length})
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

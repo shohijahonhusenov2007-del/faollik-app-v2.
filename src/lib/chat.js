@@ -1,6 +1,6 @@
 import {
   collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot,
-  query, orderBy, where, serverTimestamp, getDoc, setDoc
+  query, orderBy, where, serverTimestamp, getDoc, setDoc, arrayUnion, arrayRemove
 } from 'firebase/firestore'
 import { db } from '../firebase'
 import { uploadToImgBB } from './data'
@@ -44,6 +44,23 @@ export async function createGroupConversation(memberIds, memberNames, groupName,
     createdAt: serverTimestamp()
   })
   return ref.id
+}
+
+export async function addGroupMembers(convId, newMemberIds, newMemberNames) {
+  const updates = {
+    participants: arrayUnion(...newMemberIds)
+  }
+  newMemberIds.forEach(id => {
+    updates[`names.${id}`] = newMemberNames[id] || ''
+    updates[`typing.${id}`] = false
+  })
+  await updateDoc(doc(db, 'conversations', convId), updates)
+}
+
+export async function removeGroupMember(convId, uid) {
+  await updateDoc(doc(db, 'conversations', convId), {
+    participants: arrayRemove(uid)
+  })
 }
 
 export function listenConversations(uid, callback) {

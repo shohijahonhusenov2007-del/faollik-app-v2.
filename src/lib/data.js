@@ -63,6 +63,19 @@ export async function deleteAchievement(id) {
   return deleteDoc(doc(db, 'achievements', id))
 }
 
+export function listenComments(achievementId, callback) {
+  const q = query(collection(db, 'achievements', achievementId, 'comments'), orderBy('createdAt', 'asc'))
+  return onSnapshot(q, (snap) => {
+    callback(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+  })
+}
+
+export async function addComment(achievementId, uid, name, text) {
+  return addDoc(collection(db, 'achievements', achievementId, 'comments'), {
+    uid, name, text, createdAt: serverTimestamp()
+  })
+}
+
 export function listenChat(uid, callback) {
   const q = query(collection(db, 'chats', uid, 'messages'), orderBy('createdAt', 'asc'))
   return onSnapshot(q, (snap) => {
