@@ -2,12 +2,32 @@ import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 
 export default function Login() {
-  const { login, register } = useAuth()
+  const { login, register, resetPassword } = useAuth()
   const [isRegister, setIsRegister] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [info, setInfo] = useState('')
   const [loading, setLoading] = useState(false)
+  const [resetting, setResetting] = useState(false)
+
+  const handleReset = async () => {
+    setError('')
+    setInfo('')
+    if (!email) {
+      setError('Avval email manzilingizni kiriting')
+      return
+    }
+    setResetting(true)
+    try {
+      await resetPassword(email)
+      setInfo('Parolni tiklash havolasi emailingizga yuborildi')
+    } catch (err) {
+      setError('Xatolik: ' + (err.message || ''))
+    } finally {
+      setResetting(false)
+    }
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -57,7 +77,18 @@ export default function Login() {
               onChange={e => setPassword(e.target.value)} required
             />
           </div>
+          {!isRegister && (
+            <button
+              type="button"
+              onClick={handleReset}
+              disabled={resetting}
+              style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontSize: 12.5, padding: 0, marginBottom: 14, cursor: 'pointer' }}
+            >
+              {resetting ? 'Yuborilmoqda...' : "Parolni unutdingizmi?"}
+            </button>
+          )}
           {error && <p className="error-text">{error}</p>}
+          {info && <p style={{ color: 'var(--color-green)', fontSize: 13, marginBottom: 10 }}>{info}</p>}
           <button className="btn-primary" type="submit" disabled={loading}>
             {loading ? 'Kutilmoqda...' : (isRegister ? 'Ro\'yxatdan o\'tish' : 'Kirish')}
           </button>

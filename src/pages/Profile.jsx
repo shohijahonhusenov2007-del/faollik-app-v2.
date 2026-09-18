@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { LogOut, User as UserIcon, Mail, Save, FileText, Settings, ShieldCheck, Camera } from 'lucide-react'
+import { LogOut, User as UserIcon, Mail, Save, FileText, Settings, ShieldCheck, Camera, Moon, Sun } from 'lucide-react'
 import { doc, updateDoc } from 'firebase/firestore'
 import jsPDF from 'jspdf'
 import { Filesystem, Directory } from '@capacitor/filesystem'
@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext'
 import { db } from '../firebase'
 import { listenAchievements, uploadToImgBB } from '../lib/data'
 import { STATIC_CATEGORIES } from '../lib/categories'
+import { getTheme, applyTheme } from '../lib/theme'
 
 export default function Profile() {
   const { user, profile, setProfile, logout } = useAuth()
@@ -17,6 +18,13 @@ export default function Profile() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [achievements, setAchievements] = useState([])
   const [showSettings, setShowSettings] = useState(false)
+  const [theme, setThemeState] = useState(getTheme())
+
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark'
+    applyTheme(next)
+    setThemeState(next)
+  }
 
   useEffect(() => {
     if (!user) return
@@ -141,6 +149,32 @@ export default function Profile() {
 
         {showSettings && (
           <div style={{ marginBottom: 16 }}>
+            <div
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '10px 0', marginBottom: 8
+              }}
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 600 }}>
+                {theme === 'dark' ? <Moon size={17} /> : <Sun size={17} />}
+                Qorong'i rejim
+              </span>
+              <button
+                onClick={toggleTheme}
+                style={{
+                  width: 44, height: 26, borderRadius: 13, border: 'none', cursor: 'pointer',
+                  background: theme === 'dark' ? 'var(--color-primary)' : 'var(--color-border)',
+                  position: 'relative', flexShrink: 0
+                }}
+              >
+                <span style={{
+                  position: 'absolute', top: 3, left: theme === 'dark' ? 22 : 3,
+                  width: 20, height: 20, borderRadius: '50%', background: 'white',
+                  transition: 'left 0.15s'
+                }} />
+              </button>
+            </div>
+
             <div className="form-group">
               <label className="form-label">Profil rasmi</label>
               <label style={{

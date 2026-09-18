@@ -9,8 +9,17 @@
   --color-green: #22C55E;
   --color-blue: #3B82F6;
   --color-purple: #A855F7;
+  --color-border: #E5E7EB;
   --radius: 16px;
   --radius-sm: 10px;
+}
+
+[data-theme="dark"] {
+  --color-bg: #0F1115;
+  --color-card: #1C1F27;
+  --color-text: #F1F1F5;
+  --color-text-muted: #9CA3AF;
+  --color-border: #2C303A;
 }
 
 * { box-sizing: border-box; }
@@ -128,7 +137,7 @@ body {
 /* Search bar in header */
 .header-search {
   margin-top: 16px;
-  background: white;
+  background: var(--color-card);
   border-radius: 999px;
   display: flex;
   align-items: center;
@@ -156,7 +165,7 @@ body {
   padding: 8px 16px;
   border-radius: 999px;
   border: 1.5px solid #E5E7EB;
-  background: white;
+  background: var(--color-card);
   color: var(--color-text-muted);
   font-size: 13px;
   font-weight: 600;
@@ -247,7 +256,7 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  background: white;
+  background: var(--color-card);
   display: flex;
   align-items: center;
   justify-content: space-around;
@@ -302,7 +311,7 @@ body {
 .btn-primary:disabled { opacity: 0.6; }
 
 .btn-secondary {
-  background: white;
+  background: var(--color-card);
   color: var(--color-primary);
   border: 1.5px solid var(--color-primary);
   border-radius: var(--radius-sm);
@@ -327,7 +336,7 @@ body {
   border: 1.5px solid #E5E7EB;
   border-radius: var(--radius-sm);
   font-size: 15px;
-  background: white;
+  background: var(--color-card);
   font-family: inherit;
 }
 .form-input:focus, .form-select:focus, .form-textarea:focus {
@@ -349,7 +358,7 @@ body {
   border: 1.5px solid #E5E7EB;
   border-radius: var(--radius-sm);
   font-size: 15px;
-  background: white;
+  background: var(--color-card);
   text-align: left;
   display: flex;
   justify-content: space-between;
@@ -378,7 +387,7 @@ body {
   gap: 4px;
   cursor: pointer;
   overflow: hidden;
-  background: white;
+  background: var(--color-card);
 }
 .image-picker-slot img { width: 100%; height: 100%; object-fit: cover; }
 
@@ -393,7 +402,7 @@ body {
   z-index: 100;
 }
 .modal-sheet {
-  background: white;
+  background: var(--color-card);
   width: 100%;
   max-width: 480px;
   border-top-left-radius: 24px;
@@ -444,7 +453,7 @@ body {
 /* Chat */
 .chat-list { display: flex; flex-direction: column; gap: 10px; }
 .chat-bubble {
-  background: white;
+  background: var(--color-card);
   border-radius: var(--radius-sm);
   padding: 12px 14px;
   max-width: 78%;
@@ -473,7 +482,7 @@ body {
   background: linear-gradient(160deg, var(--color-primary), #2A1F80);
 }
 .login-card {
-  background: white;
+  background: var(--color-card);
   border-radius: 20px;
   padding: 28px 22px;
 }
@@ -520,7 +529,7 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: white;
+  background: var(--color-card);
   padding: 14px;
   border-radius: var(--radius-sm);
   margin-bottom: 8px;
@@ -532,7 +541,7 @@ body {
   color: var(--color-text);
 }
 .profile-menu-item svg { color: var(--color-primary); }
-.profile-menu-item.danger { color: #DC2626; border: 1.5px solid #FCA5A5; background: white; justify-content: center; }
+.profile-menu-item.danger { color: #DC2626; border: 1.5px solid #FCA5A5; background: var(--color-card); justify-content: center; }
 .profile-menu-item.admin-panel {
   background: var(--color-primary);
   color: white;
@@ -682,7 +691,7 @@ body {
 /* Admin panel table */
 .admin-table-wrap {
   overflow-x: auto;
-  background: white;
+  background: var(--color-card);
   border-radius: var(--radius-sm);
 }
 .admin-table {
@@ -813,7 +822,7 @@ body {
 }
 .update-banner-text { flex: 1; font-size: 13px; }
 .update-banner button {
-  background: white;
+  background: var(--color-card);
   color: var(--color-primary);
   border: none;
   border-radius: 8px;
@@ -889,7 +898,7 @@ body {
 .chat-bubble-row.mine { justify-content: flex-end; }
 .chat-bubble-content {
   max-width: 75%;
-  background: white;
+  background: var(--color-card);
   border-radius: 14px;
   padding: 8px 12px;
   font-size: 14px;
@@ -927,7 +936,7 @@ body {
   align-items: center;
   gap: 8px;
   padding: 10px 12px calc(10px + env(safe-area-inset-bottom)) 12px;
-  background: white;
+  background: var(--color-card);
   border-top: 1px solid #F1F1F5;
 }
 .chat-input-bar input[type=text] {

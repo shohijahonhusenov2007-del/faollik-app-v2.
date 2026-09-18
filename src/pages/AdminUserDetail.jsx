@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Navigate } from 'react-router-dom'
 import { ArrowLeft, Trash2 } from 'lucide-react'
-import { doc, getDoc } from 'firebase/firestore'
+import { doc, getDoc, updateDoc } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import { listenAchievements, deleteAchievement } from '../lib/data'
@@ -41,6 +41,13 @@ export default function AdminUserDetail() {
     }
   }
 
+  const handleRoleToggle = async () => {
+    const newRole = targetUser?.role === 'Administrator' ? 'Foydalanuvchi' : 'Administrator'
+    if (!confirm(`${targetUser?.name || 'Foydalanuvchi'} uchun rol "${newRole}"ga o'zgartirilsinmi?`)) return
+    await updateDoc(doc(db, 'users', uid), { role: newRole })
+    setTargetUser(prev => ({ ...prev, role: newRole }))
+  }
+
   return (
     <div className="flex-page">
       <div className="fullpage-header">
@@ -53,9 +60,14 @@ export default function AdminUserDetail() {
           <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', marginTop: 24 }}>Yuklanmoqda...</p>
         ) : (
           <>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: 13.5, marginBottom: 4 }}>
-              Rol: {targetUser?.role || '-'}
-            </p>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: 13.5, margin: 0 }}>
+                Rol: {targetUser?.role || '-'}
+              </p>
+              <button className="btn-secondary" style={{ padding: '6px 12px', fontSize: 12.5 }} onClick={handleRoleToggle}>
+                {targetUser?.role === 'Administrator' ? 'Foydalanuvchi qilish' : 'Administrator qilish'}
+              </button>
+            </div>
             <p style={{ color: 'var(--color-text-muted)', fontSize: 13.5, marginBottom: 12 }}>
               Jami: {achievements.length} ta yutuq
             </p>
