@@ -10,6 +10,7 @@ import { db } from '../firebase'
 import { listenAchievements, uploadToImgBB } from '../lib/data'
 import { STATIC_CATEGORIES } from '../lib/categories'
 import { getTheme, applyTheme } from '../lib/theme'
+import { computeStreak } from '../lib/streak'
 
 export default function Profile() {
   const { user, profile, setProfile, logout } = useAuth()
@@ -135,6 +136,16 @@ export default function Profile() {
           <span className="stat-label">Rasmlar</span>
         </div>
       </div>
+
+      {computeStreak(achievements) > 1 && (
+        <div style={{
+          margin: '0 16px 12px', padding: '10px 14px', borderRadius: 12,
+          background: 'linear-gradient(90deg, #F5A623, #EF4444)', color: 'white',
+          fontSize: 13.5, fontWeight: 600, textAlign: 'center'
+        }}>
+          🔥 {computeStreak(achievements)} kun ketma-ket faollik
+        </div>
+      )}
 
       <div className="page-content" style={{ paddingTop: 24 }}>
         <button className="profile-menu-item" onClick={handlePdfExport}>

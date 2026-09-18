@@ -1,18 +1,18 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Pencil, Trash2, Calendar, User as UserIcon, X, Download, Share2 } from 'lucide-react'
+import { ArrowLeft, Pencil, Trash2, Calendar, User as UserIcon, X, Download, Share2, Heart } from 'lucide-react'
 import { doc, getDoc } from 'firebase/firestore'
 import { Share } from '@capacitor/share'
 import { Media } from '@capacitor-community/media'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
-import { deleteAchievement } from '../lib/data'
+import { deleteAchievement, toggleLike } from '../lib/data'
 import CategoryBadge from '../components/CategoryBadge'
 
 export default function AchievementDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { profile } = useAuth()
+  const { profile, user } = useAuth()
   const [achievement, setAchievement] = useState(null)
   const [loading, setLoading] = useState(true)
   const [lightboxUrl, setLightboxUrl] = useState(null)
@@ -31,6 +31,15 @@ export default function AchievementDetail() {
       await deleteAchievement(achievement.id)
       navigate('/yutuqlar')
     }
+  }
+
+  const handleLike = async () => {
+    const liked = (achievement.likes || []).includes(user.uid)
+    const newLikes = liked
+      ? (achievement.likes || []).filter(u => u !== user.uid)
+      : [...(achievement.likes || []), user.uid]
+    setAchievement({ ...achievement, likes: newLikes })
+    await toggleLike(achievement.id, user.uid, liked)
   }
 
   const handleSaveToGallery = async () => {
@@ -108,11 +117,24 @@ export default function AchievementDetail() {
 
       <div className="detail-content">
         <h1 className="detail-title">{achievement.title}</h1>
-        <CategoryBadge
-          categoryId={achievement.categoryId}
-          name={achievement.categoryName}
-          style={{ marginBottom: 12, display: 'inline-block' }}
-        />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <CategoryBadge
+            categoryId={achievement.categoryId}
+            name={achievement.categoryName}
+            style={{ display: 'inline-block' }}
+          />
+          <button
+            onClick={handleLike}
+            style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer' }}
+          >
+            <Heart
+              size={19}
+              color={(achievement.likes || []).includes(user.uid) ? '#EF4444' : 'var(--color-text-muted)'}
+              fill={(achievement.likes || []).includes(user.uid) ? '#EF4444' : 'none'}
+            />
+            <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{(achievement.likes || []).length || ''}</span>
+          </button>
+        </div>
         <div className="detail-meta-row">
           <Calendar size={14} /> {achievement.date}
         </div>

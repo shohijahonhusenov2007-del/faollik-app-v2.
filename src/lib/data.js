@@ -1,14 +1,16 @@
 import {
-  collection, addDoc, deleteDoc, doc, onSnapshot,
-  query, orderBy, where, serverTimestamp
+  collection, addDoc, deleteDoc, doc, onSnapshot, updateDoc,
+  query, orderBy, where, serverTimestamp, arrayUnion, arrayRemove
 } from 'firebase/firestore'
 import { db } from '../firebase'
+import { compressImage } from './image'
 
 const IMGBB_API_KEY = 'bd5716b1f393da686383990fabbd875e'
 
 export async function uploadToImgBB(file) {
+  const compressed = await compressImage(file)
   const formData = new FormData()
-  formData.append('image', file)
+  formData.append('image', compressed)
   const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
     method: 'POST',
     body: formData
@@ -16,6 +18,13 @@ export async function uploadToImgBB(file) {
   const json = await res.json()
   if (!json.success) throw new Error('Rasm yuklashda xatolik')
   return json.data.url
+}
+
+export async function toggleLike(achievementId, uid, liked) {
+  const ref = doc(db, 'achievements', achievementId)
+  await updateDoc(ref, {
+    likes: liked ? arrayRemove(uid) : arrayUnion(uid)
+  })
 }
 
 export function listenAchievements(uid, callback) {

@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, Trash2, ImageOff, SlidersHorizontal, X } from 'lucide-react'
+import { Search, Trash2, ImageOff, SlidersHorizontal, X, Heart } from 'lucide-react'
 import { collection, getDocs } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
-import { listenAchievements, listenAllAchievements, deleteAchievement } from '../lib/data'
+import { listenAchievements, listenAllAchievements, deleteAchievement, toggleLike } from '../lib/data'
 import { STATIC_CATEGORIES } from '../lib/categories'
 import CategoryBadge from '../components/CategoryBadge'
 
@@ -62,6 +62,13 @@ export default function Achievements() {
     if (confirm(`"${a.title}" o'chirilsinmi?`)) {
       await deleteAchievement(a.id)
     }
+  }
+
+  const handleLike = async (e, a) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const liked = (a.likes || []).includes(user.uid)
+    await toggleLike(a.id, user.uid, liked)
   }
 
   const clearFilters = () => {
@@ -161,6 +168,18 @@ export default function Achievements() {
                 </p>
                 <CategoryBadge categoryId={a.categoryId} name={a.categoryName} />
               </div>
+              <button
+                className="icon-btn"
+                onClick={(e) => handleLike(e, a)}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}
+              >
+                <Heart
+                  size={17}
+                  color={(a.likes || []).includes(user.uid) ? '#EF4444' : 'var(--color-text-muted)'}
+                  fill={(a.likes || []).includes(user.uid) ? '#EF4444' : 'none'}
+                />
+                <span style={{ fontSize: 10.5, color: 'var(--color-text-muted)' }}>{(a.likes || []).length || ''}</span>
+              </button>
               <button className="icon-btn" onClick={(e) => handleDelete(e, a)}>
                 <Trash2 size={18} color="#DC2626" />
               </button>
