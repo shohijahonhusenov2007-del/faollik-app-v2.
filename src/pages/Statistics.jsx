@@ -1,12 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import { collection, getDocs } from 'firebase/firestore'
+import { Trophy } from 'lucide-react'
+import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
-import { listenAchievements } from '../lib/data'
+import { listenAchievements, listenAllAchievements } from '../lib/data'
 import { STATIC_CATEGORIES } from '../lib/categories'
 
 export default function Statistics() {
   const { user } = useAuth()
   const [achievements, setAchievements] = useState([])
+  const [allAchievements, setAllAchievements] = useState([])
+  const [users, setUsers] = useState([])
 
   useEffect(() => {
     if (!user) return
@@ -14,7 +19,39 @@ export default function Statistics() {
     return unsub
   }, [user])
 
+  useEffect(() => {
+    const unsub = listenAllAchievements(setAllAchievements)
+    return unsub
+  }, [])
+
+  useEffect(() => {
+    const loadUsers = async () => {
+      const snap = await getDocs(collection(db, 'users'))
+      setUsers(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    }
+    loadUsers()
+  }, [])
+
   const photoCount = achievements.reduce((sum, a) => sum + (a.imageUrls?.length || 0), 0)
+
+  const monthKey = new Date().toISOString().slice(0, 7)
+  const thisMonthCount = achievements.filter(a => (a.date || '').startsWith(monthKey)).length
+
+  const leaderboard = useMemo(() => {
+    const counts = {}
+    allAchievements.forEach(a => {
+      if (!a.uid) return
+      counts[a.uid] = (counts[a.uid] || 0) + 1
+    })
+    return Object.entries(counts)
+      .map(([uid, count]) => ({
+        uid, count,
+        name: users.find(u => u.id === uid)?.name || 'Foydalanuvchi',
+        photoUrl: users.find(u => u.id === uid)?.photoUrl
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10)
+  }, [allAchievements, users])
 
   const monthlyData = useMemo(() => {
     const map = {}
@@ -54,8 +91,18 @@ export default function Statistics() {
         </div>
       </div>
 
+      {thisMonthCount > 0 && (
+        <div style={{
+          margin: '4px 0 16px', padding: '10px 14px', borderRadius: 12,
+          background: 'linear-gradient(90deg, var(--color-primary), var(--color-primary-light))', color: 'white',
+          fontSize: 13.5, fontWeight: 600, textAlign: 'center'
+        }}>
+          Bu oy {thisMonthCount} ta yutuq qo'shdingiz 🎉
+        </div>
+      )}
+
       <div className="section-header"><h2>Kategoriyalar bo'yicha</h2></div>
-      <div style={{ background: 'white', borderRadius: 16, padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{ background: 'var(--color-card)', borderRadius: 16, padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
         <div style={{ width: 130, height: 130, flexShrink: 0 }}>
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -86,7 +133,7 @@ export default function Statistics() {
       </div>
 
       <div className="section-header"><h2>Oylik faollik</h2></div>
-      <div style={{ background: 'white', borderRadius: 16, padding: '12px 8px', minHeight: 100 }}>
+      <div style={{ background: 'var(--color-card)', borderRadius: 16, padding: '12px 8px', minHeight: 100 }}>
         {monthlyData.length > 0 ? (
           <div style={{ height: 200 }}>
             <ResponsiveContainer width="100%" height="100%">
@@ -102,6 +149,37 @@ export default function Statistics() {
           <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '24px 0', margin: 0 }}>
             Ma'lumot yo'q
           </p>
+        )}
+      </div>
+
+      <div className="section-header"><h2><Trophy size={16} style={{ verticalAlign: 'middle', marginRight: 4 }} />Reyting</h2></div>
+      <div style={{ background: 'var(--color-card)', borderRadius: 16, padding: '6px 4px' }}>
+        {leaderboard.length === 0 ? (
+          <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '24px 0', margin: 0 }}>
+            Ma'lumot yo'q
+          </p>
+        ) : (
+          leaderboard.map((u, i) => (
+            <div
+              key={u.uid}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px',
+                borderRadius: 10,
+                background: u.uid === user?.uid ? 'rgba(79, 63, 224, 0.08)' : 'transparent'
+              }}
+            >
+              <span style={{ width: 20, fontWeight: 700, fontSize: 13.5, color: 'var(--color-text-muted)' }}>
+                {i + 1}
+              </span>
+              <div className="chat-list-avatar" style={{ width: 32, height: 32, fontSize: 13 }}>
+                {u.photoUrl ? <img src={u.photoUrl} alt="" /> : u.name.charAt(0).toUpperCase()}
+              </div>
+              <span style={{ flex: 1, fontSize: 13.5, fontWeight: u.uid === user?.uid ? 700 : 500 }}>
+                {u.name}{u.uid === user?.uid ? ' (siz)' : ''}
+              </span>
+              <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--color-primary)' }}>{u.count}</span>
+            </div>
+          ))
         )}
       </div>
     </div>
