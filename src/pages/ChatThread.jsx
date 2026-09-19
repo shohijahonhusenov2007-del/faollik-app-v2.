@@ -37,6 +37,10 @@ export default function ChatThread() {
   const recordInterval = useRef(null)
   const bottomRef = useRef(null)
   const MAX_RECORD_SECONDS = 60
+  const [seenSheetMsg, setSeenSheetMsg] = useState(null)
+  const pressTimer = useRef(null)
+  const longPressTriggered = useRef(false)
+  const touchHandledRef = useRef(false)
 
   useEffect(() => {
     const unsub = onSnapshot(doc(db, 'conversations', convId), (snap) => {
@@ -85,6 +89,34 @@ export default function ChatThread() {
         .join(', ')
     : ''
   const senderName = (uid) => conversation?.names?.[uid] || 'Foydalanuvchi'
+
+  const isGroupFullyRead = (m) => {
+    if (!isGroup) return false
+    const others = (conversation?.participants || []).filter(id => id !== m.senderId)
+    if (others.length === 0) return false
+    return others.every(id => {
+      const lr = conversation?.lastRead?.[id]
+      return lr && m.createdAt && lr.toMillis() >= m.createdAt.toMillis()
+    })
+  }
+
+  const handlePressStart = (m) => {
+    if (!m || m.deleted) return
+    longPressTriggered.current = false
+    pressTimer.current = setTimeout(() => {
+      longPressTriggered.current = true
+      if (m.senderId === user.uid) setSeenSheetMsg(m)
+    }, 500)
+  }
+
+  const handlePressEnd = (m) => {
+    if (pressTimer.current) { clearTimeout(pressTimer.current); pressTimer.current = null }
+    touchHandledRef.current = true
+    setTimeout(() => { touchHandledRef.current = false }, 400)
+    if (!longPressTriggered.current && m.senderId === user.uid && !m.deleted) {
+      setActionMsg(actionMsg === m.id ? null : m.id)
+    }
+  }
 
   const handleTextChange = (val) => {
     setText(val)
@@ -235,7 +267,10 @@ export default function ChatThread() {
             <div key={m.id} className={`chat-bubble-row ${mine ? 'mine' : ''}`}>
               <div
                 className="chat-bubble-content"
-                onClick={() => mine && !m.deleted && setActionMsg(actionMsg === m.id ? null : m.id)}
+                onTouchStart={() => handlePressStart(m)}
+                onTouchEnd={(e) => { e.preventDefault(); handlePressEnd(m) }}
+                onTouchMove={() => { if (pressTimer.current) { clearTimeout(pressTimer.current); pressTimer.current = null } }}
+                onClick={() => { if (!touchHandledRef.current) mine && !m.deleted && setActionMsg(actionMsg === m.id ? null : m.id) }}
               >
                 {isGroup && !mine && !m.deleted && (
                   <span style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: 'var(--color-primary)', marginBottom: 2 }}>
@@ -257,7 +292,7 @@ export default function ChatThread() {
                   {m.edited && !m.deleted && <span>tahrirlangan</span>}
                   <span>{formatTime(m.createdAt)}</span>
                   {mine && !m.deleted && !isGroup && (isRead ? <CheckCheck size={13} /> : <Check size={13} />)}
-                  {mine && !m.deleted && isGroup && <Check size={13} />}
+                  {mine && !m.deleted && isGroup && (isGroupFullyRead(m) ? <CheckCheck size={13} /> : <Check size={13} />)}
                 </div>
 
                 {actionMsg === m.id && (
@@ -418,6 +453,38 @@ export default function ChatThread() {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {seenSheetMsg && (
+        <div className="sheet-overlay" onClick={() => setSeenSheetMsg(null)}>
+          <div className="sheet-panel" onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 16px 12px' }}>
+              <h3 style={{ margin: 0, fontSize: 16 }}>Xabar holati</h3>
+              <button className="icon-only-btn" onClick={() => setSeenSheetMsg(null)}><X size={18} /></button>
+            </div>
+            <div style={{ maxHeight: '50vh', overflowY: 'auto' }}>
+              {(conversation?.participants || []).filter(id => id !== user.uid).map(uid => {
+                const lr = conversation?.lastRead?.[uid]
+                const read = lr && seenSheetMsg.createdAt && lr.toMillis() >= seenSheetMsg.createdAt.toMillis()
+                return (
+                  <div key={uid} className="sheet-item">
+                    <div className="chat-list-avatar" style={{ width: 32, height: 32, fontSize: 13 }}>
+                      {(conversation?.names?.[uid] || 'F').charAt(0).toUpperCase()}
+                    </div>
+                    <span style={{ flex: 1, marginLeft: 10 }}>{conversation?.names?.[uid] || 'Foydalanuvchi'}</span>
+                    {read ? (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--color-primary)' }}>
+                        <CheckCheck size={14} /> {formatTime(lr)}
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Hali o'qimadi</span>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </div>
       )}

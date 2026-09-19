@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import { STATIC_CATEGORIES } from './lib/categories'
 
@@ -22,6 +22,8 @@ import Login from './pages/Login'
 function AppShell() {
   const { user } = useAuth()
   const [showAdd, setShowAdd] = useState(false)
+  const location = useLocation()
+  const hideNav = /^\/chat\/[^/]+$/.test(location.pathname)
 
   return (
     <div className="app-shell">
@@ -40,7 +42,7 @@ function AppShell() {
         <Route path="/foydalanuvchi/:uid" element={<UserAchievements />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      <BottomNav onAddClick={() => setShowAdd(true)} />
+      {!hideNav && <BottomNav onAddClick={() => setShowAdd(true)} />}
       {showAdd && (
         <AddAchievementModal
           uid={user.uid}
