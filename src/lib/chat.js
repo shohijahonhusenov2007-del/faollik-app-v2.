@@ -4,6 +4,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '../firebase'
 import { uploadToImgBB } from './data'
+import { createNotification } from './notifications'
 
 function conversationId(uid1, uid2) {
   return [uid1, uid2].sort().join('_')
@@ -83,7 +84,20 @@ export function listenMessages(convId, callback) {
   })
 }
 
-export async function sendMessage(convId, senderId, { text, imageFile }) {
+async function notifyRecipients(convId, senderId, previewText, notifyMeta) {
+  if (!notifyMeta) return
+  const { senderName, participants, isGroup, groupName } = notifyMeta
+  const recipients = (participants || []).filter(id => id !== senderId)
+  await Promise.all(recipients.map(uid => createNotification(uid, {
+    type: 'message',
+    fromUid: senderId,
+    fromName: senderName || 'Foydalanuvchi',
+    convId,
+    text: (isGroup ? `${groupName || 'Guruh'}: ` : '') + (previewText || '')
+  })))
+}
+
+export async function sendMessage(convId, senderId, { text, imageFile }, notifyMeta) {
   let imageUrl = null
   if (imageFile) {
     imageUrl = await uploadToImgBB(imageFile)
@@ -101,9 +115,10 @@ export async function sendMessage(convId, senderId, { text, imageFile }) {
     lastMessageAt: serverTimestamp(),
     lastSenderId: senderId
   })
+  await notifyRecipients(convId, senderId, imageUrl ? '📷 Rasm' : text, notifyMeta)
 }
 
-export async function sendVoiceMessage(convId, senderId, audioDataUrl, durationSec) {
+export async function sendVoiceMessage(convId, senderId, audioDataUrl, durationSec, notifyMeta) {
   await addDoc(collection(db, 'conversations', convId, 'messages'), {
     senderId,
     text: '',
@@ -119,6 +134,7 @@ export async function sendVoiceMessage(convId, senderId, audioDataUrl, durationS
     lastMessageAt: serverTimestamp(),
     lastSenderId: senderId
   })
+  await notifyRecipients(convId, senderId, '🎤 Ovozli xabar', notifyMeta)
 }
 
 export async function editMessage(convId, messageId, newText) {

@@ -18,6 +18,7 @@ import AdminPanel from './pages/AdminPanel'
 import AdminUserDetail from './pages/AdminUserDetail'
 import UserAchievements from './pages/UserAchievements'
 import Login from './pages/Login'
+import NotificationBell from './components/NotificationBell'
 
 function AppShell() {
   const { user } = useAuth()
@@ -29,6 +30,7 @@ function AppShell() {
     <div className="app-shell">
       <UpdateBanner />
       <OfflineBanner />
+      <NotificationBell />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/yutuqlar" element={<Achievements />} />

@@ -4,6 +4,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '../firebase'
 import { compressImage } from './image'
+import { createNotification } from './notifications'
 
 const IMGBB_API_KEY = 'bd5716b1f393da686383990fabbd875e'
 
@@ -20,11 +21,20 @@ export async function uploadToImgBB(file) {
   return json.data.url
 }
 
-export async function toggleLike(achievementId, uid, liked) {
+export async function toggleLike(achievementId, uid, liked, ownerUid, achievementTitle, fromName) {
   const ref = doc(db, 'achievements', achievementId)
   await updateDoc(ref, {
     likes: liked ? arrayRemove(uid) : arrayUnion(uid)
   })
+  if (!liked && ownerUid && ownerUid !== uid) {
+    await createNotification(ownerUid, {
+      type: 'like',
+      fromUid: uid,
+      fromName: fromName || 'Foydalanuvchi',
+      achievementId,
+      achievementTitle: achievementTitle || ''
+    })
+  }
 }
 
 export function listenAchievements(uid, callback) {
@@ -70,10 +80,20 @@ export function listenComments(achievementId, callback) {
   })
 }
 
-export async function addComment(achievementId, uid, name, text) {
-  return addDoc(collection(db, 'achievements', achievementId, 'comments'), {
+export async function addComment(achievementId, uid, name, text, ownerUid, achievementTitle) {
+  const ref = await addDoc(collection(db, 'achievements', achievementId, 'comments'), {
     uid, name, text, createdAt: serverTimestamp()
   })
+  if (ownerUid && ownerUid !== uid) {
+    await createNotification(ownerUid, {
+      type: 'comment',
+      fromUid: uid,
+      fromName: name || 'Foydalanuvchi',
+      achievementId,
+      achievementTitle: achievementTitle || ''
+    })
+  }
+  return ref
 }
 
 export function listenChat(uid, callback) {

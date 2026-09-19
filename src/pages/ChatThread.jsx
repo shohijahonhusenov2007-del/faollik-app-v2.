@@ -142,7 +142,12 @@ export default function ChatThread() {
         await editMessage(convId, editingId, text.trim())
         setEditingId(null)
       } else {
-        await sendMessage(convId, user.uid, { text: text.trim(), imageFile })
+        await sendMessage(convId, user.uid, { text: text.trim(), imageFile }, {
+          senderName: conversation?.names?.[user.uid] || 'Foydalanuvchi',
+          participants: conversation?.participants || [],
+          isGroup,
+          groupName: conversation?.groupName
+        })
       }
       setText('')
       setImageFile(null)
@@ -190,7 +195,12 @@ export default function ChatThread() {
       const mimeType = result.value.mimeType || 'audio/aac'
       const durationSec = Math.round((result.value.msDuration || 0) / 1000)
       if (base64) {
-        await sendVoiceMessage(convId, user.uid, `data:${mimeType};base64,${base64}`, durationSec)
+        await sendVoiceMessage(convId, user.uid, `data:${mimeType};base64,${base64}`, durationSec, {
+          senderName: conversation?.names?.[user.uid] || 'Foydalanuvchi',
+          participants: conversation?.participants || [],
+          isGroup,
+          groupName: conversation?.groupName
+        })
       }
     } catch (err) {
       alert('Yuborishda xatolik: ' + err.message)

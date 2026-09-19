@@ -38,7 +38,7 @@ export default function AchievementDetail() {
     if (!commentText.trim()) return
     setSendingComment(true)
     try {
-      await addComment(id, user.uid, profile?.name || 'Foydalanuvchi', commentText.trim())
+      await addComment(id, user.uid, profile?.name || 'Foydalanuvchi', commentText.trim(), achievement.uid, achievement.title)
       setCommentText('')
     } catch (err) {
       alert('Xatolik: ' + err.message)
@@ -60,7 +60,7 @@ export default function AchievementDetail() {
       ? (achievement.likes || []).filter(u => u !== user.uid)
       : [...(achievement.likes || []), user.uid]
     setAchievement({ ...achievement, likes: newLikes })
-    await toggleLike(achievement.id, user.uid, liked)
+    await toggleLike(achievement.id, user.uid, liked, achievement.uid, achievement.title, profile?.name || 'Foydalanuvchi')
   }
 
   const handleSaveToGallery = async () => {
