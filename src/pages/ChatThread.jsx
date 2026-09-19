@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { doc, onSnapshot, collection, getDocs } from 'firebase/firestore'
-import { ArrowLeft, Send, Image as ImageIcon, Check, CheckCheck, X, Users, UserPlus, UserMinus, LogOut } from 'lucide-react'
+import { ArrowLeft, Send, Image as ImageIcon, Check, CheckCheck, X, Users, UserPlus, UserMinus, LogOut, Mic, Square } from 'lucide-react'
+import { VoiceRecorder } from 'capacitor-voice-recorder'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import {
-  listenMessages, sendMessage, editMessage, deleteMessage, setTyping, markRead,
+  listenMessages, sendMessage, sendVoiceMessage, editMessage, deleteMessage, setTyping, markRead,
   addGroupMembers, removeGroupMember
 } from '../lib/chat'
 
@@ -30,8 +31,12 @@ export default function ChatThread() {
   const [showAddMembers, setShowAddMembers] = useState(false)
   const [allUsers, setAllUsers] = useState([])
   const [selectedNew, setSelectedNew] = useState([])
+  const [isRecording, setIsRecording] = useState(false)
+  const [recordSeconds, setRecordSeconds] = useState(0)
   const typingTimeout = useRef(null)
+  const recordInterval = useRef(null)
   const bottomRef = useRef(null)
+  const MAX_RECORD_SECONDS = 60
 
   useEffect(() => {
     const unsub = onSnapshot(doc(db, 'conversations', convId), (snap) => {
@@ -118,6 +123,48 @@ export default function ChatThread() {
     }
   }
 
+  const startRecording = async () => {
+    try {
+      const canRecord = await VoiceRecorder.canDeviceVoiceRecord()
+      if (!canRecord.value) { alert("Qurilma ovoz yozishni qo'llamaydi"); return }
+      const hasPermission = await VoiceRecorder.hasAudioRecordingPermission()
+      if (!hasPermission.value) {
+        const req = await VoiceRecorder.requestAudioRecordingPermission()
+        if (!req.value) { alert('Mikrofon uchun ruxsat kerak'); return }
+      }
+      await VoiceRecorder.startRecording()
+      setIsRecording(true)
+      setRecordSeconds(0)
+      recordInterval.current = setInterval(() => {
+        setRecordSeconds(s => {
+          if (s + 1 >= MAX_RECORD_SECONDS) {
+            stopRecording()
+            return s
+          }
+          return s + 1
+        })
+      }, 1000)
+    } catch (err) {
+      alert('Yozishni boshlashda xatolik: ' + err.message)
+    }
+  }
+
+  const stopRecording = async () => {
+    if (recordInterval.current) clearInterval(recordInterval.current)
+    setIsRecording(false)
+    try {
+      const result = await VoiceRecorder.stopRecording()
+      const base64 = result.value.recordDataBase64
+      const mimeType = result.value.mimeType || 'audio/aac'
+      const durationSec = Math.round((result.value.msDuration || 0) / 1000)
+      if (base64) {
+        await sendVoiceMessage(convId, user.uid, `data:${mimeType};base64,${base64}`, durationSec)
+      }
+    } catch (err) {
+      alert('Yuborishda xatolik: ' + err.message)
+    }
+  }
+
   const startEdit = (m) => {
     setEditingId(m.id)
     setText(m.text)
@@ -200,6 +247,9 @@ export default function ChatThread() {
                 ) : (
                   <>
                     {m.imageUrl && <img src={m.imageUrl} alt="" />}
+                    {m.audioData && (
+                      <audio controls src={m.audioData} style={{ width: 220, maxWidth: '100%' }} />
+                    )}
                     {m.text && <span>{m.text}</span>}
                   </>
                 )}
@@ -254,22 +304,37 @@ export default function ChatThread() {
         </div>
       )}
 
-      <div className="chat-input-bar">
-        <label className="icon-only-btn" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-          <ImageIcon size={20} />
-          <input type="file" accept="image/*" onChange={handleImagePick} style={{ display: 'none' }} />
-        </label>
-        <input
-          type="text"
-          placeholder="Xabar..."
-          value={text}
-          onChange={e => handleTextChange(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleSend()}
-        />
-        <button onClick={handleSend} disabled={sending}>
-          <Send size={17} />
-        </button>
-      </div>
+      {isRecording ? (
+        <div className="chat-input-bar" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, color: '#EF4444', fontWeight: 600, fontSize: 13.5 }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#EF4444' }} />
+            Yozilmoqda... {recordSeconds}s / {MAX_RECORD_SECONDS}s
+          </span>
+          <button onClick={stopRecording} style={{ background: '#EF4444', borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none' }}>
+            <Square size={15} color="white" fill="white" />
+          </button>
+        </div>
+      ) : (
+        <div className="chat-input-bar">
+          <label className="icon-only-btn" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+            <ImageIcon size={20} />
+            <input type="file" accept="image/*" onChange={handleImagePick} style={{ display: 'none' }} />
+          </label>
+          <button className="icon-only-btn" onClick={startRecording} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Mic size={20} />
+          </button>
+          <input
+            type="text"
+            placeholder="Xabar..."
+            value={text}
+            onChange={e => handleTextChange(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleSend()}
+          />
+          <button onClick={handleSend} disabled={sending}>
+            <Send size={17} />
+          </button>
+        </div>
+      )}
 
       {showGroupInfo && isGroup && (
         <div className="sheet-overlay" onClick={() => { setShowGroupInfo(false); setShowAddMembers(false) }}>

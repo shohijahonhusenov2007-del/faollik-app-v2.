@@ -103,6 +103,24 @@ export async function sendMessage(convId, senderId, { text, imageFile }) {
   })
 }
 
+export async function sendVoiceMessage(convId, senderId, audioDataUrl, durationSec) {
+  await addDoc(collection(db, 'conversations', convId, 'messages'), {
+    senderId,
+    text: '',
+    imageUrl: null,
+    audioData: audioDataUrl,
+    audioDuration: durationSec,
+    createdAt: serverTimestamp(),
+    edited: false,
+    deleted: false
+  })
+  await updateDoc(doc(db, 'conversations', convId), {
+    lastMessage: '🎤 Ovozli xabar',
+    lastMessageAt: serverTimestamp(),
+    lastSenderId: senderId
+  })
+}
+
 export async function editMessage(convId, messageId, newText) {
   await updateDoc(doc(db, 'conversations', convId, 'messages', messageId), {
     text: newText,

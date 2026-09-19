@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
-import { getFirestore } from 'firebase/firestore'
+import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage'
 
 const firebaseConfig = {
@@ -17,5 +17,8 @@ const app = initializeApp(firebaseConfig)
 
 export const auth = getAuth(app)
 export const db = getFirestore(app)
+enableIndexedDbPersistence(db).catch(() => {
+  // bir nechta oyna ochiq bo'lsa yoki brauzer qo'llamasa, e'tiborsiz qoldiramiz
+})
 export const storage = getStorage(app)
 export default app
