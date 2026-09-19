@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { doc, onSnapshot, collection, getDocs } from 'firebase/firestore'
-import { ArrowLeft, Send, Image as ImageIcon, Check, CheckCheck, X, Users, UserPlus, UserMinus, LogOut, Mic, Square } from 'lucide-react'
+import { ArrowLeft, Send, Image as ImageIcon, Check, CheckCheck, X, Users, UserPlus, UserMinus, LogOut, Mic, Square, Search } from 'lucide-react'
 import { VoiceRecorder } from 'capacitor-voice-recorder'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
@@ -13,6 +13,20 @@ import {
 function formatTime(ts) {
   if (!ts?.toMillis) return ''
   return new Date(ts.toMillis()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+
+function highlightText(text, query) {
+  if (!query || !query.trim()) return text
+  const q = query.trim()
+  const idx = text.toLowerCase().indexOf(q.toLowerCase())
+  if (idx === -1) return text
+  return (
+    <>
+      {text.slice(0, idx)}
+      <mark style={{ background: '#FDE68A', color: '#111', borderRadius: 3, padding: '0 1px' }}>{text.slice(idx, idx + q.length)}</mark>
+      {text.slice(idx + q.length)}
+    </>
+  )
 }
 
 export default function ChatThread() {
@@ -41,6 +55,8 @@ export default function ChatThread() {
   const pressTimer = useRef(null)
   const longPressTriggered = useRef(false)
   const touchHandledRef = useRef(false)
+  const [showSearch, setShowSearch] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     const unsub = onSnapshot(doc(db, 'conversations', convId), (snap) => {
@@ -117,6 +133,10 @@ export default function ChatThread() {
       setActionMsg(actionMsg === m.id ? null : m.id)
     }
   }
+
+  const filteredMessages = searchQuery.trim()
+    ? messages.filter(m => m.text && m.text.toLowerCase().includes(searchQuery.trim().toLowerCase()))
+    : messages
 
   const handleTextChange = (val) => {
     setText(val)
@@ -267,10 +287,33 @@ export default function ChatThread() {
             </p>
           </div>
         </div>
+        <button className="icon-only-btn" onClick={() => setShowSearch(s => !s)}>
+          <Search size={19} />
+        </button>
       </div>
 
+      {showSearch && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderBottom: '1px solid var(--color-border)' }}>
+          <input
+            type="text"
+            className="form-input"
+            placeholder="Xabarlarni qidirish..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            autoFocus
+            style={{ flex: 1 }}
+          />
+          <span style={{ fontSize: 12, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
+            {searchQuery.trim() ? `${filteredMessages.length} ta` : ''}
+          </span>
+          <button className="icon-only-btn" onClick={() => { setShowSearch(false); setSearchQuery('') }}>
+            <X size={18} />
+          </button>
+        </div>
+      )}
+
       <div className="chat-messages-wrap">
-        {messages.map(m => {
+        {filteredMessages.map(m => {
           const mine = m.senderId === user.uid
           const isRead = mine && !isGroup && otherLastRead && m.createdAt && otherLastRead.toMillis() >= m.createdAt.toMillis()
           return (
@@ -295,7 +338,7 @@ export default function ChatThread() {
                     {m.audioData && (
                       <audio controls src={m.audioData} style={{ width: 220, maxWidth: '100%' }} />
                     )}
-                    {m.text && <span>{m.text}</span>}
+                    {m.text && <span>{highlightText(m.text, searchQuery)}</span>}
                   </>
                 )}
                 <div className="chat-bubble-meta">
