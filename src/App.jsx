@@ -16,6 +16,7 @@ import Statistics from './pages/Statistics'
 import Profile from './pages/Profile'
 import AdminPanel from './pages/AdminPanel'
 import AdminUserDetail from './pages/AdminUserDetail'
+import UserAchievements from './pages/UserAchievements'
 import Login from './pages/Login'
 
 function AppShell() {
@@ -36,6 +37,7 @@ function AppShell() {
         <Route path="/profil" element={<Profile />} />
         <Route path="/admin" element={<AdminPanel />} />
         <Route path="/admin/foydalanuvchi/:uid" element={<AdminUserDetail />} />
+        <Route path="/foydalanuvchi/:uid" element={<UserAchievements />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <BottomNav onAddClick={() => setShowAdd(true)} />

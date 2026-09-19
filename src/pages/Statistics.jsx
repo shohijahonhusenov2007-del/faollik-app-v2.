@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { collection, getDocs } from 'firebase/firestore'
 import { Trophy } from 'lucide-react'
@@ -8,10 +9,12 @@ import { listenAchievements, listenAllAchievements } from '../lib/data'
 import { STATIC_CATEGORIES } from '../lib/categories'
 
 export default function Statistics() {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
+  const isAdmin = profile?.role === 'Administrator'
   const [achievements, setAchievements] = useState([])
   const [allAchievements, setAllAchievements] = useState([])
   const [users, setUsers] = useState([])
+  const [viewMode, setViewMode] = useState('personal')
 
   useEffect(() => {
     if (!user) return
@@ -32,10 +35,11 @@ export default function Statistics() {
     loadUsers()
   }, [])
 
-  const photoCount = achievements.reduce((sum, a) => sum + (a.imageUrls?.length || 0), 0)
+  const sourceList = (isAdmin && viewMode === 'all') ? allAchievements : achievements
+  const photoCount = sourceList.reduce((sum, a) => sum + (a.imageUrls?.length || 0), 0)
 
   const monthKey = new Date().toISOString().slice(0, 7)
-  const thisMonthCount = achievements.filter(a => (a.date || '').startsWith(monthKey)).length
+  const thisMonthCount = sourceList.filter(a => (a.date || '').startsWith(monthKey)).length
 
   const leaderboard = useMemo(() => {
     const counts = {}
@@ -55,7 +59,7 @@ export default function Statistics() {
 
   const monthlyData = useMemo(() => {
     const map = {}
-    achievements.forEach(a => {
+    sourceList.forEach(a => {
       const month = (a.date || '').slice(0, 7)
       if (!month) return
       map[month] = (map[month] || 0) + 1
@@ -64,17 +68,36 @@ export default function Statistics() {
       .sort(([a], [b]) => a.localeCompare(b))
       .slice(-6)
       .map(([month, count]) => ({ month, count }))
-  }, [achievements])
+  }, [sourceList])
 
   const categoryData = STATIC_CATEGORIES.map(c => ({
     ...c,
-    count: achievements.filter(a => a.categoryId === c.id).length
+    count: sourceList.filter(a => a.categoryId === c.id).length
   }))
-  const total = achievements.length
+  const total = sourceList.length
 
   return (
     <div className="page-content" style={{ paddingTop: 20 }}>
       <h1 style={{ fontSize: 20, fontWeight: 800, margin: '0 0 16px 0' }}>Statistika</h1>
+
+      {isAdmin && (
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+          <button
+            className={`filter-chip ${viewMode === 'personal' ? 'active' : ''}`}
+            style={{ flex: 1 }}
+            onClick={() => setViewMode('personal')}
+          >
+            Shaxsiy statistika
+          </button>
+          <button
+            className={`filter-chip ${viewMode === 'all' ? 'active' : ''}`}
+            style={{ flex: 1 }}
+            onClick={() => setViewMode('all')}
+          >
+            Umumiy statistika
+          </button>
+        </div>
+      )}
 
       <div className="stats-row" style={{ marginTop: 0, gridTemplateColumns: 'repeat(3, 1fr)' }}>
         <div className="stat-card stat-green">
@@ -97,7 +120,7 @@ export default function Statistics() {
           background: 'linear-gradient(90deg, var(--color-primary), var(--color-primary-light))', color: 'white',
           fontSize: 13.5, fontWeight: 600, textAlign: 'center'
         }}>
-          Bu oy {thisMonthCount} ta yutuq qo'shdingiz 🎉
+          Bu oy {(isAdmin && viewMode === 'all') ? "jamoa" : "siz"} {thisMonthCount} ta yutuq qo'shdi{(isAdmin && viewMode === 'all') ? '' : 'ngiz'} 🎉
         </div>
       )}
 
@@ -160,11 +183,12 @@ export default function Statistics() {
           </p>
         ) : (
           leaderboard.map((u, i) => (
-            <div
+            <Link
               key={u.uid}
+              to={`/foydalanuvchi/${u.uid}`}
               style={{
                 display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px',
-                borderRadius: 10,
+                borderRadius: 10, textDecoration: 'none', color: 'inherit',
                 background: u.uid === user?.uid ? 'rgba(79, 63, 224, 0.08)' : 'transparent'
               }}
             >
@@ -178,7 +202,7 @@ export default function Statistics() {
                 {u.name}{u.uid === user?.uid ? ' (siz)' : ''}
               </span>
               <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--color-primary)' }}>{u.count}</span>
-            </div>
+            </Link>
           ))
         )}
       </div>

@@ -123,7 +123,11 @@ export default function AchievementDetail() {
       <div className="fullpage-header">
         <button className="fullpage-back" onClick={() => navigate(-1)}><ArrowLeft size={20} /></button>
         <h3>Yutuq detali</h3>
-        <button className="fullpage-back" onClick={handleDelete}><Trash2 size={18} /></button>
+        {(achievement.uid === user.uid || profile?.role === 'Administrator') ? (
+          <button className="fullpage-back" onClick={handleDelete}><Trash2 size={18} /></button>
+        ) : (
+          <div style={{ width: 40 }} />
+        )}
       </div>
 
       {mainImage && (

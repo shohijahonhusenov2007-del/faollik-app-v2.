@@ -1,19 +1,25 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Filesystem, Directory } from '@capacitor/filesystem'
 import { FileOpener } from '@capacitor-community/file-opener'
 
 const REPO_API = 'https://api.github.com/repos/shohijahonhusenov2007-del/faollik-app-v2./releases/latest'
 const CURRENT_BUILD = Number(import.meta.env.VITE_BUILD_NUMBER || 0)
+const CHECK_INTERVAL_MS = 5 * 60 * 1000
+const MIN_GAP_MS = 60 * 1000
 
 export default function UpdateBanner() {
   const [updateInfo, setUpdateInfo] = useState(null)
   const [downloading, setDownloading] = useState(false)
   const [progressText, setProgressText] = useState('')
+  const lastCheckRef = useRef(0)
 
   useEffect(() => {
     let cancelled = false
 
-    const check = async () => {
+    const check = async (force = false) => {
+      const now = Date.now()
+      if (!force && now - lastCheckRef.current < MIN_GAP_MS) return
+      lastCheckRef.current = now
       try {
         const res = await fetch(REPO_API, { cache: 'no-store' })
         if (!res.ok) return
@@ -29,24 +35,24 @@ export default function UpdateBanner() {
           setUpdateInfo({ build: versionData.build, apkUrl: apkAsset.browser_download_url })
         }
       } catch (err) {
-        // silently ignore — no internet or GitHub unreachable
+        // silently ignore — no internet, GitHub unreachable, or rate limited
       }
     }
 
-    check()
-    const interval = setInterval(check, 60000)
+    check(true)
+    const interval = setInterval(() => check(true), CHECK_INTERVAL_MS)
 
     const onVisible = () => {
-      if (document.visibilityState === 'visible') check()
+      if (document.visibilityState === 'visible') check(false)
     }
     document.addEventListener('visibilitychange', onVisible)
-    window.addEventListener('focus', check)
+    window.addEventListener('focus', () => check(false))
 
     return () => {
       cancelled = true
       clearInterval(interval)
       document.removeEventListener('visibilitychange', onVisible)
-      window.removeEventListener('focus', check)
+      window.removeEventListener('focus', () => check(false))
     }
   }, [])
 

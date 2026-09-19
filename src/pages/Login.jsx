@@ -63,7 +63,7 @@ export default function Login() {
           <div className="form-group">
             <label className="form-label">Email</label>
             <input
-              type="email" name="email" autoComplete="username"
+              type="email" name="email" id="login-email" autoComplete="username"
               className="form-input" value={email}
               onChange={e => setEmail(e.target.value)} required
             />
@@ -71,7 +71,7 @@ export default function Login() {
           <div className="form-group">
             <label className="form-label">Parol</label>
             <input
-              type="password" name="password"
+              type="password" name="password" id="login-password"
               autoComplete={isRegister ? 'new-password' : 'current-password'}
               className="form-input" value={password}
               onChange={e => setPassword(e.target.value)} required
