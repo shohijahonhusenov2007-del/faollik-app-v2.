@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, X, Heart, MessageCircle, Send } from 'lucide-react'
+import { Bell, X, Heart, MessageCircle, Send, Download } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { listenNotifications, markNotificationRead, markAllNotificationsRead } from '../lib/notifications'
+import { subscribeUpdateStore, startUpdateChecks, downloadUpdate } from '../lib/updateStore'
 
 function timeAgo(ts) {
   if (!ts?.toMillis) return ''
@@ -21,6 +22,7 @@ export default function NotificationBell() {
   const navigate = useNavigate()
   const [notifications, setNotifications] = useState([])
   const [open, setOpen] = useState(false)
+  const [updateState, setUpdateState] = useState({ updateInfo: null, downloading: false, progressText: '' })
 
   useEffect(() => {
     if (!user) return
@@ -28,7 +30,13 @@ export default function NotificationBell() {
     return unsub
   }, [user])
 
-  const unreadCount = notifications.filter(n => !n.read).length
+  useEffect(() => {
+    startUpdateChecks()
+    const unsub = subscribeUpdateStore(setUpdateState)
+    return unsub
+  }, [])
+
+  const unreadCount = notifications.filter(n => !n.read).length + (updateState.updateInfo ? 1 : 0)
 
   const handleClose = async () => {
     setOpen(false)
@@ -96,6 +104,23 @@ export default function NotificationBell() {
               <button className="icon-only-btn" onClick={handleClose}><X size={18} /></button>
             </div>
             <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+              {updateState.updateInfo && (
+                <div
+                  className="sheet-item"
+                  style={{ cursor: 'pointer', alignItems: 'center', background: 'rgba(34,197,94,0.12)' }}
+                  onClick={() => { if (!updateState.downloading) downloadUpdate() }}
+                >
+                  <div style={{ marginTop: 2 }}><Download size={16} color="#22C55E" /></div>
+                  <div style={{ flex: 1, marginLeft: 10 }}>
+                    <p style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: '#22C55E' }}>
+                      Yangi versiya mavjud (build {updateState.updateInfo.build})
+                    </p>
+                    <p style={{ margin: '2px 0 0', fontSize: 11.5, color: 'var(--color-text-muted)' }}>
+                      {updateState.downloading ? updateState.progressText : "Yuklab olish uchun bosing"}
+                    </p>
+                  </div>
+                </div>
+              )}
               {notifications.length === 0 ? (
                 <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 20 }}>Hozircha bildirishnoma yo'q</p>
               ) : (
