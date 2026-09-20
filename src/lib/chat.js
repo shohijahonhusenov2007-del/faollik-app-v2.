@@ -163,3 +163,11 @@ export async function markRead(convId, uid) {
     [`lastRead.${uid}`]: serverTimestamp()
   })
 }
+
+export async function pinMessage(convId, messageId) {
+  await updateDoc(doc(db, 'conversations', convId), { pinnedMessageId: messageId })
+}
+
+export async function unpinMessage(convId) {
+  await updateDoc(doc(db, 'conversations', convId), { pinnedMessageId: null })
+}

@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { doc, onSnapshot, collection, getDocs } from 'firebase/firestore'
-import { ArrowLeft, Send, Image as ImageIcon, Check, CheckCheck, X, Users, UserPlus, UserMinus, LogOut, Mic, Square, Search } from 'lucide-react'
+import { ArrowLeft, Send, Image as ImageIcon, Check, CheckCheck, X, Users, UserPlus, UserMinus, LogOut, Mic, Square, Search, Pin } from 'lucide-react'
 import { VoiceRecorder } from 'capacitor-voice-recorder'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import {
   listenMessages, sendMessage, sendVoiceMessage, editMessage, deleteMessage, setTyping, markRead,
-  addGroupMembers, removeGroupMember
+  addGroupMembers, removeGroupMember, pinMessage, unpinMessage
 } from '../lib/chat'
 
 function formatTime(ts) {
@@ -129,7 +129,7 @@ export default function ChatThread() {
     if (pressTimer.current) { clearTimeout(pressTimer.current); pressTimer.current = null }
     touchHandledRef.current = true
     setTimeout(() => { touchHandledRef.current = false }, 400)
-    if (!longPressTriggered.current && m.senderId === user.uid && !m.deleted) {
+    if (!longPressTriggered.current && !m.deleted) {
       setActionMsg(actionMsg === m.id ? null : m.id)
     }
   }
@@ -137,6 +137,17 @@ export default function ChatThread() {
   const filteredMessages = searchQuery.trim()
     ? messages.filter(m => m.text && m.text.toLowerCase().includes(searchQuery.trim().toLowerCase()))
     : messages
+
+  const pinnedMsg = messages.find(m => m.id === conversation?.pinnedMessageId)
+
+  const handleTogglePin = async (m) => {
+    setActionMsg(null)
+    if (conversation?.pinnedMessageId === m.id) {
+      await unpinMessage(convId)
+    } else {
+      await pinMessage(convId, m.id)
+    }
+  }
 
   const handleTextChange = (val) => {
     setText(val)
@@ -292,6 +303,19 @@ export default function ChatThread() {
         </button>
       </div>
 
+      {conversation?.pinnedMessageId && pinnedMsg && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'rgba(37,99,235,0.08)', borderBottom: '1px solid var(--color-border)' }}>
+          <Pin size={15} color="var(--color-primary)" style={{ flexShrink: 0 }} />
+          <div style={{ flex: 1, overflow: 'hidden' }}>
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: 'var(--color-primary)' }}>Pin qilingan xabar</p>
+            <p style={{ margin: 0, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {pinnedMsg.deleted ? "Xabar o'chirildi" : (pinnedMsg.text || (pinnedMsg.imageUrl ? '📷 Rasm' : (pinnedMsg.audioData ? '🎤 Ovozli xabar' : '')))}
+            </p>
+          </div>
+          <button className="icon-only-btn" onClick={() => unpinMessage(convId)}><X size={16} /></button>
+        </div>
+      )}
+
       {showSearch && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderBottom: '1px solid var(--color-border)' }}>
           <input
@@ -323,7 +347,7 @@ export default function ChatThread() {
                 onTouchStart={() => handlePressStart(m)}
                 onTouchEnd={(e) => { e.preventDefault(); handlePressEnd(m) }}
                 onTouchMove={() => { if (pressTimer.current) { clearTimeout(pressTimer.current); pressTimer.current = null } }}
-                onClick={() => { if (!touchHandledRef.current) mine && !m.deleted && setActionMsg(actionMsg === m.id ? null : m.id) }}
+                onClick={() => { if (!touchHandledRef.current && !m.deleted) setActionMsg(actionMsg === m.id ? null : m.id) }}
               >
                 {isGroup && !mine && !m.deleted && (
                   <span style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: 'var(--color-primary)', marginBottom: 2 }}>
@@ -353,18 +377,28 @@ export default function ChatThread() {
                     position: 'absolute', top: '100%', right: 0, background: 'white', color: 'var(--color-text)',
                     borderRadius: 10, boxShadow: '0 4px 14px rgba(0,0,0,0.15)', marginTop: 4, zIndex: 10, overflow: 'hidden'
                   }}>
+                    {mine && (
+                      <button
+                        style={{ display: 'block', width: '100%', padding: '10px 16px', border: 'none', background: 'white', textAlign: 'left', fontSize: 13 }}
+                        onClick={(e) => { e.stopPropagation(); startEdit(m) }}
+                      >
+                        Tahrirlash
+                      </button>
+                    )}
                     <button
                       style={{ display: 'block', width: '100%', padding: '10px 16px', border: 'none', background: 'white', textAlign: 'left', fontSize: 13 }}
-                      onClick={(e) => { e.stopPropagation(); startEdit(m) }}
+                      onClick={(e) => { e.stopPropagation(); handleTogglePin(m) }}
                     >
-                      Tahrirlash
+                      {conversation?.pinnedMessageId === m.id ? "Pin'dan olib tashlash" : 'Pin qilish'}
                     </button>
-                    <button
-                      style={{ display: 'block', width: '100%', padding: '10px 16px', border: 'none', background: 'white', textAlign: 'left', fontSize: 13, color: '#DC2626' }}
-                      onClick={(e) => { e.stopPropagation(); handleDelete(m) }}
-                    >
-                      O'chirish
-                    </button>
+                    {mine && (
+                      <button
+                        style={{ display: 'block', width: '100%', padding: '10px 16px', border: 'none', background: 'white', textAlign: 'left', fontSize: 13, color: '#DC2626' }}
+                        onClick={(e) => { e.stopPropagation(); handleDelete(m) }}
+                      >
+                        O'chirish
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
