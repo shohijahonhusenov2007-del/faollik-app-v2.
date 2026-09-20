@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Pencil, Trash2, Calendar, User as UserIcon, X, Download, Share2, Heart, Send, MessageCircle } from 'lucide-react'
+import { ArrowLeft, Pencil, Trash2, Calendar, User as UserIcon, X, Download, Share2, Heart, Send, MessageCircle, FileText } from 'lucide-react'
 import { doc, getDoc } from 'firebase/firestore'
+import jsPDF from 'jspdf'
+import { Filesystem, Directory } from '@capacitor/filesystem'
 import { Share } from '@capacitor/share'
 import { Media } from '@capacitor-community/media'
 import { db } from '../firebase'
@@ -104,6 +106,83 @@ export default function AchievementDetail() {
     }
   }
 
+  const handleExportCard = async () => {
+    try {
+      const pdf = new jsPDF()
+      const pageWidth = pdf.internal.pageSize.getWidth()
+      let y = 20
+
+      pdf.setFontSize(18)
+      pdf.setFont(undefined, 'bold')
+      pdf.text('Ijtimoiy Faollik Portfolio', pageWidth / 2, y, { align: 'center' })
+      y += 12
+
+      if (mainImage) {
+        try {
+          const res = await fetch(mainImage)
+          const blob = await res.blob()
+          const dataUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onloadend = () => resolve(reader.result)
+            reader.onerror = reject
+            reader.readAsDataURL(blob)
+          })
+          const format = blob.type.includes('png') ? 'PNG' : 'JPEG'
+          const imgEl = new Image()
+          await new Promise((resolve) => { imgEl.onload = resolve; imgEl.src = dataUrl })
+          const maxW = pageWidth - 40
+          const maxH = 110
+          const ratio = Math.min(maxW / imgEl.width, maxH / imgEl.height)
+          const w = imgEl.width * ratio
+          const h = imgEl.height * ratio
+          pdf.addImage(dataUrl, format, (pageWidth - w) / 2, y, w, h)
+          y += h + 10
+        } catch (imgErr) {
+          // rasm yuklanmasa, o'tkazib yuboramiz
+        }
+      }
+
+      pdf.setFontSize(15)
+      pdf.setFont(undefined, 'bold')
+      const titleLines = pdf.splitTextToSize(achievement.title, pageWidth - 28)
+      pdf.text(titleLines, 14, y)
+      y += titleLines.length * 7 + 4
+
+      pdf.setFontSize(11)
+      pdf.setFont(undefined, 'normal')
+      pdf.text(`Kategoriya: ${achievement.categoryName || '-'}`, 14, y)
+      y += 6
+      pdf.text(`Sana: ${achievement.date || '-'}`, 14, y)
+      y += 6
+      if (profile?.name) {
+        pdf.text(`Foydalanuvchi: ${profile.name}`, 14, y)
+        y += 6
+      }
+      pdf.text(`Layklar: ${(achievement.likes || []).length}    Izohlar: ${comments.length}`, 14, y)
+      y += 10
+
+      if (achievement.description) {
+        pdf.setFontSize(12)
+        const descLines = pdf.splitTextToSize(achievement.description, pageWidth - 28)
+        pdf.text(descLines, 14, y)
+      }
+
+      const base64 = pdf.output('datauristring').split(',')[1]
+      const fileName = `yutuq_${achievement.id}.pdf`
+      const result = await Filesystem.writeFile({
+        path: fileName,
+        data: base64,
+        directory: Directory.Cache
+      })
+      await Share.share({
+        title: achievement.title,
+        url: result.uri
+      })
+    } catch (err) {
+      alert('Eksport qilishda xatolik: ' + err.message)
+    }
+  }
+
   if (loading) {
     return <div className="spinner-wrap">Yuklanmoqda...</div>
   }
@@ -123,11 +202,12 @@ export default function AchievementDetail() {
       <div className="fullpage-header">
         <button className="fullpage-back" onClick={() => navigate(-1)}><ArrowLeft size={20} /></button>
         <h3>Yutuq detali</h3>
-        {(achievement.uid === user.uid || profile?.role === 'Administrator') ? (
-          <button className="fullpage-back" onClick={handleDelete}><Trash2 size={18} /></button>
-        ) : (
-          <div style={{ width: 40 }} />
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <button className="fullpage-back" onClick={handleExportCard}><FileText size={18} /></button>
+          {(achievement.uid === user.uid || profile?.role === 'Administrator') && (
+            <button className="fullpage-back" onClick={handleDelete}><Trash2 size={18} /></button>
+          )}
+        </div>
       </div>
 
       {mainImage && (
