@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { LogOut, User as UserIcon, Mail, Save, FileText, Settings, ShieldCheck, Camera, Moon, Sun } from 'lucide-react'
+import { LogOut, User as UserIcon, Mail, Save, FileText, Settings, ShieldCheck, Camera, Moon, Sun, Globe, Check } from 'lucide-react'
 import { doc, updateDoc } from 'firebase/firestore'
 import jsPDF from 'jspdf'
 import { Filesystem, Directory } from '@capacitor/filesystem'
@@ -11,6 +11,8 @@ import { listenAchievements, uploadToImgBB } from '../lib/data'
 import { STATIC_CATEGORIES } from '../lib/categories'
 import { getTheme, applyTheme } from '../lib/theme'
 import { computeStreak } from '../lib/streak'
+import { useLanguage } from '../context/LanguageContext'
+import { LANGUAGES } from '../lib/i18n'
 
 export default function Profile() {
   const { user, profile, setProfile, logout } = useAuth()
@@ -19,7 +21,9 @@ export default function Profile() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [achievements, setAchievements] = useState([])
   const [showSettings, setShowSettings] = useState(false)
+  const [showLanguages, setShowLanguages] = useState(false)
   const [theme, setThemeState] = useState(getTheme())
+  const { lang, setLang, t } = useLanguage()
 
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark'
@@ -105,7 +109,7 @@ export default function Profile() {
     <div className="flex-page">
       <div className="header-card">
         <div className="header-top-row">
-          <h1 className="header-title">Profil</h1>
+          <h1 className="header-title">{t('profile_title')}</h1>
           {profile?.role === 'Administrator' && <span className="admin-badge">Admin</span>}
         </div>
         <div className="user-card">
@@ -125,15 +129,15 @@ export default function Profile() {
       <div className="stats-row">
         <div className="stat-card stat-green">
           <span className="stat-number">{achievements.length}</span>
-          <span className="stat-label">Yutuqlar</span>
+          <span className="stat-label">{t('stat_achievements')}</span>
         </div>
         <div className="stat-card stat-blue">
           <span className="stat-number">{STATIC_CATEGORIES.length}</span>
-          <span className="stat-label">Kategoriyalar</span>
+          <span className="stat-label">{t('stat_categories')}</span>
         </div>
         <div className="stat-card stat-purple">
           <span className="stat-number">{totalImages}</span>
-          <span className="stat-label">Rasmlar</span>
+          <span className="stat-label">{t('stat_images')}</span>
         </div>
       </div>
 
@@ -143,20 +147,50 @@ export default function Profile() {
           background: 'linear-gradient(90deg, #F5A623, #EF4444)', color: 'white',
           fontSize: 13.5, fontWeight: 600, textAlign: 'center'
         }}>
-          🔥 {computeStreak(achievements)} kun ketma-ket faollik
+          🔥 {t('streak_days', { days: computeStreak(achievements) })}
         </div>
       )}
 
       <div className="page-content" style={{ paddingTop: 24 }}>
         <button className="profile-menu-item" onClick={handlePdfExport}>
           <FileText size={18} />
-          PDF chiqarish
+          {t('menu_pdf')}
         </button>
 
         <button className="profile-menu-item" onClick={() => setShowSettings(!showSettings)}>
           <Settings size={18} />
-          Sozlamalar
+          {t('menu_settings')}
         </button>
+
+        <button className="profile-menu-item" onClick={() => setShowLanguages(!showLanguages)}>
+          <Globe size={18} />
+          {t('menu_language')}
+        </button>
+
+        {showLanguages && (
+          <div style={{ marginBottom: 16 }}>
+            <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text-muted)', margin: '4px 0 10px' }}>
+              {t('language_section_title')}
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {LANGUAGES.map(l => (
+                <button
+                  key={l.code}
+                  onClick={() => { setLang(l.code); setShowLanguages(false) }}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '10px 12px', borderRadius: 10, border: 'none', textAlign: 'left',
+                    background: lang === l.code ? 'rgba(37,99,235,0.08)' : 'transparent',
+                    color: 'var(--color-text)', fontSize: 14, cursor: 'pointer'
+                  }}
+                >
+                  <span>{l.nativeName}</span>
+                  {lang === l.code && <Check size={16} color="var(--color-primary)" />}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {showSettings && (
           <div style={{ marginBottom: 16 }}>
@@ -168,7 +202,7 @@ export default function Profile() {
             >
               <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 600 }}>
                 {theme === 'dark' ? <Moon size={17} /> : <Sun size={17} />}
-                Qorong'i rejim
+                {t('dark_mode')}
               </span>
               <button
                 onClick={toggleTheme}
@@ -187,7 +221,7 @@ export default function Profile() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Profil rasmi</label>
+              <label className="form-label">{t('profile_photo')}</label>
               <label style={{
                 display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer'
               }}>
@@ -199,23 +233,23 @@ export default function Profile() {
                 </div>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-primary)', fontWeight: 600, fontSize: 13.5 }}>
                   <Camera size={16} />
-                  {uploadingPhoto ? 'Yuklanmoqda...' : 'Rasm o\'zgartirish'}
+                  {uploadingPhoto ? t('uploading') : t('change_photo')}
                 </span>
                 <input type="file" accept="image/*" onChange={handlePhotoChange} style={{ display: 'none' }} disabled={uploadingPhoto} />
               </label>
             </div>
 
             <div className="form-group">
-              <label className="form-label"><UserIcon size={14} style={{ verticalAlign: 'middle' }} /> Ism</label>
+              <label className="form-label"><UserIcon size={14} style={{ verticalAlign: 'middle' }} /> {t('name_label')}</label>
               <input className="form-input" value={name} onChange={e => setName(e.target.value)} />
             </div>
             <div className="form-group">
-              <label className="form-label"><Mail size={14} style={{ verticalAlign: 'middle' }} /> Email</label>
+              <label className="form-label"><Mail size={14} style={{ verticalAlign: 'middle' }} /> {t('email_label')}</label>
               <input className="form-input" value={user?.email || ''} disabled style={{ opacity: 0.6 }} />
             </div>
             <button className="btn-primary" onClick={handleSave} disabled={saving}>
               <Save size={16} style={{ verticalAlign: 'middle', marginRight: 6 }} />
-              {saving ? 'Saqlanmoqda...' : 'Saqlash'}
+              {saving ? t('saving') : t('save')}
             </button>
           </div>
         )}
@@ -223,13 +257,13 @@ export default function Profile() {
         {profile?.role === 'Administrator' && (
           <Link to="/admin" className="profile-menu-item admin-panel" style={{ textDecoration: 'none' }}>
             <ShieldCheck size={18} />
-            Admin panelga o'tish
+            {t('menu_admin_panel')}
           </Link>
         )}
 
         <button className="profile-menu-item danger" onClick={logout}>
           <LogOut size={18} />
-          Chiqish
+          {t('menu_logout')}
         </button>
       </div>
     </div>

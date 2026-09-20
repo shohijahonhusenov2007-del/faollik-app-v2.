@@ -19,6 +19,7 @@ import AdminUserDetail from './pages/AdminUserDetail'
 import UserAchievements from './pages/UserAchievements'
 import Login from './pages/Login'
 import NotificationBell from './components/NotificationBell'
+import { LanguageProvider } from './context/LanguageContext'
 
 function AppShell() {
   const { user } = useAuth()
@@ -59,13 +60,15 @@ function AppShell() {
 export default function App() {
   const { user, loading } = useAuth()
 
-  if (loading) {
-    return <div className="spinner-wrap">Yuklanmoqda...</div>
-  }
-
-  if (!user) {
-    return <Login />
-  }
-
-  return <AppShell />
+  return (
+    <LanguageProvider>
+      {loading ? (
+        <div className="spinner-wrap">Yuklanmoqda...</div>
+      ) : !user ? (
+        <Login />
+      ) : (
+        <AppShell />
+      )}
+    </LanguageProvider>
+  )
 }

@@ -78,7 +78,7 @@ export default function NotificationBell() {
       <button
         onClick={() => setOpen(true)}
         style={{
-          position: 'fixed', top: 'calc(env(safe-area-inset-top, 0px) + 12px)', right: 12, zIndex: 60,
+          position: 'fixed', top: 'calc(env(safe-area-inset-top, 0px) + 68px)', right: 12, zIndex: 60,
           width: 40, height: 40, borderRadius: '50%', background: 'var(--color-card)',
           border: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'center',
           boxShadow: '0 2px 8px rgba(0,0,0,0.12)'
