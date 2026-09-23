@@ -7,9 +7,11 @@ import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import { listenAchievements, listenAllAchievements } from '../lib/data'
 import { STATIC_CATEGORIES } from '../lib/categories'
+import { useLanguage } from '../context/LanguageContext'
 
 export default function Statistics() {
   const { user, profile } = useAuth()
+  const { t } = useLanguage()
   const isAdmin = profile?.role === 'Administrator'
   const [achievements, setAchievements] = useState([])
   const [allAchievements, setAllAchievements] = useState([])
@@ -78,7 +80,7 @@ export default function Statistics() {
 
   return (
     <div className="page-content" style={{ paddingTop: 20 }}>
-      <h1 style={{ fontSize: 20, fontWeight: 800, margin: '0 0 16px 0' }}>Statistika</h1>
+      <h1 style={{ fontSize: 20, fontWeight: 800, margin: '0 0 16px 0' }}>{t('nav_stats')}</h1>
 
       {isAdmin && (
         <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
@@ -87,14 +89,14 @@ export default function Statistics() {
             style={{ flex: 1 }}
             onClick={() => setViewMode('personal')}
           >
-            Shaxsiy statistika
+            {t('personal_stats')}
           </button>
           <button
             className={`filter-chip ${viewMode === 'all' ? 'active' : ''}`}
             style={{ flex: 1 }}
             onClick={() => setViewMode('all')}
           >
-            Umumiy statistika
+            {t('overall_stats')}
           </button>
         </div>
       )}
@@ -102,15 +104,15 @@ export default function Statistics() {
       <div className="stats-row" style={{ marginTop: 0, gridTemplateColumns: 'repeat(3, 1fr)' }}>
         <div className="stat-card stat-green">
           <span className="stat-number">{total}</span>
-          <span className="stat-label">Jami yutuq</span>
+          <span className="stat-label">{t('total_achievements')}</span>
         </div>
         <div className="stat-card stat-blue">
           <span className="stat-number">{STATIC_CATEGORIES.length}</span>
-          <span className="stat-label">Kategoriyalar</span>
+          <span className="stat-label">{t('stat_categories')}</span>
         </div>
         <div className="stat-card stat-purple">
           <span className="stat-number">{photoCount}</span>
-          <span className="stat-label">Rasmlar</span>
+          <span className="stat-label">{t('stat_images')}</span>
         </div>
       </div>
 
@@ -120,11 +122,11 @@ export default function Statistics() {
           background: 'linear-gradient(90deg, var(--color-primary), var(--color-primary-light))', color: 'white',
           fontSize: 13.5, fontWeight: 600, textAlign: 'center'
         }}>
-          Bu oy {(isAdmin && viewMode === 'all') ? "jamoa" : "siz"} {thisMonthCount} ta yutuq qo'shdi{(isAdmin && viewMode === 'all') ? '' : 'ngiz'} 🎉
+          {(isAdmin && viewMode === 'all') ? t('team_progress', { count: thisMonthCount }) : t('you_progress', { count: thisMonthCount })}
         </div>
       )}
 
-      <div className="section-header"><h2>Kategoriyalar bo'yicha</h2></div>
+      <div className="section-header"><h2>{t('by_category')}</h2></div>
       <div style={{ background: 'var(--color-card)', borderRadius: 16, padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
         <div style={{ width: 130, height: 130, flexShrink: 0 }}>
           <ResponsiveContainer width="100%" height="100%">
@@ -155,7 +157,7 @@ export default function Statistics() {
         </div>
       </div>
 
-      <div className="section-header"><h2>Oylik faollik</h2></div>
+      <div className="section-header"><h2>{t('monthly_activity')}</h2></div>
       <div style={{ background: 'var(--color-card)', borderRadius: 16, padding: '12px 8px', minHeight: 100 }}>
         {monthlyData.length > 0 ? (
           <div style={{ height: 200 }}>
@@ -170,16 +172,16 @@ export default function Statistics() {
           </div>
         ) : (
           <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '24px 0', margin: 0 }}>
-            Ma'lumot yo'q
+            {t('no_data')}
           </p>
         )}
       </div>
 
-      <div className="section-header"><h2><Trophy size={16} style={{ verticalAlign: 'middle', marginRight: 4 }} />Reyting</h2></div>
+      <div className="section-header"><h2><Trophy size={16} style={{ verticalAlign: 'middle', marginRight: 4 }} />{t('leaderboard')}</h2></div>
       <div style={{ background: 'var(--color-card)', borderRadius: 16, padding: '6px 4px' }}>
         {leaderboard.length === 0 ? (
           <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '24px 0', margin: 0 }}>
-            Ma'lumot yo'q
+            {t('no_data')}
           </p>
         ) : (
           leaderboard.map((u, i) => (
@@ -199,7 +201,7 @@ export default function Statistics() {
                 {u.photoUrl ? <img src={u.photoUrl} alt="" /> : u.name.charAt(0).toUpperCase()}
               </div>
               <span style={{ flex: 1, fontSize: 13.5, fontWeight: u.uid === user?.uid ? 700 : 500 }}>
-                {u.name}{u.uid === user?.uid ? ' (siz)' : ''}
+                {u.name}{u.uid === user?.uid ? ' ' + t('you_suffix') : ''}
               </span>
               <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--color-primary)' }}>{u.count}</span>
             </Link>

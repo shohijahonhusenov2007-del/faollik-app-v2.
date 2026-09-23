@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { ArrowLeft, Camera, Check, X } from 'lucide-react'
 import { addAchievement } from '../lib/data'
+import { useLanguage } from '../context/LanguageContext'
 
 export default function AddAchievementModal({ uid, categories, onClose }) {
+  const { t } = useLanguage()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [categoryId, setCategoryId] = useState('')
@@ -30,8 +32,8 @@ export default function AddAchievementModal({ uid, categories, onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!title.trim()) { setError('Nomi kiritilishi shart'); return }
-    if (!categoryId) { setError('Kategoriya tanlanishi shart'); return }
+    if (!title.trim()) { setError(t('name_required_error')); return }
+    if (!categoryId) { setError(t('category_required_error')); return }
     setSaving(true)
     setError('')
     try {
@@ -55,32 +57,32 @@ export default function AddAchievementModal({ uid, categories, onClose }) {
     <div className="fullpage-overlay">
       <div className="fullpage-header">
         <button className="fullpage-back" onClick={onClose}><ArrowLeft size={20} /></button>
-        <h3>Yutuq qo'shish</h3>
+        <h3>{t('add_achievement_title')}</h3>
       </div>
 
       <div className="fullpage-content">
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label">Nomi *</label>
+            <label className="form-label">{t('name_required')}</label>
             <input
               className="form-input" value={title}
               onChange={e => setTitle(e.target.value)}
-              placeholder="Yutuq nomi"
+              placeholder={t('name_placeholder')}
             />
           </div>
 
           <div className="form-group">
-            <label className="form-label">Kategoriya *</label>
+            <label className="form-label">{t('category_required')}</label>
             <button type="button" className="select-btn" onClick={() => setShowCategorySheet(true)}>
               <span style={{ color: selectedCategoryName ? 'var(--color-text)' : 'var(--color-text-muted)' }}>
-                {selectedCategoryName || 'Tanlang'}
+                {selectedCategoryName || t('choose_label')}
               </span>
               <span>▾</span>
             </button>
           </div>
 
           <div className="form-group">
-            <label className="form-label">Sana *</label>
+            <label className="form-label">{t('date_required')}</label>
             <input
               type="date" className="form-input" value={date}
               onChange={e => setDate(e.target.value)}
@@ -88,17 +90,17 @@ export default function AddAchievementModal({ uid, categories, onClose }) {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Tavsif</label>
+            <label className="form-label">{t('description_label')}</label>
             <textarea
               className="form-textarea" value={description}
               onChange={e => setDescription(e.target.value.slice(0, 500))}
-              placeholder="Yutuq haqida qisqacha..."
+              placeholder={t('description_placeholder')}
             />
             <div className="char-count">{description.length}/500</div>
           </div>
 
           <div className="form-group">
-            <label className="form-label">Rasm qo'shish (max 3)</label>
+            <label className="form-label">{t('add_images_label')}</label>
             <div className="image-picker">
               {previews.map((src, idx) => (
                 <div key={idx} className="image-picker-slot" style={{ position: 'relative', border: 'none' }}>
@@ -119,7 +121,7 @@ export default function AddAchievementModal({ uid, categories, onClose }) {
               {imageFiles.length < 3 && (
                 <label className="image-picker-slot">
                   <Camera size={22} />
-                  <span>Rasm tanlash</span>
+                  <span>{t('choose_image')}</span>
                   <input type="file" accept="image/*" multiple onChange={handleImagePick} style={{ display: 'none' }} />
                 </label>
               )}
@@ -130,7 +132,7 @@ export default function AddAchievementModal({ uid, categories, onClose }) {
 
           <button type="submit" className="btn-primary" disabled={saving}>
             <Check size={18} />
-            {saving ? 'Saqlanmoqda...' : 'Saqlash'}
+            {saving ? t('saving') : t('save')}
           </button>
         </form>
       </div>
@@ -140,7 +142,7 @@ export default function AddAchievementModal({ uid, categories, onClose }) {
           <div className="sheet-panel" onClick={e => e.stopPropagation()}>
             {categories.length === 0 && (
               <p style={{ padding: '16px 4px', color: '#9CA3AF', fontSize: 14 }}>
-                Hali kategoriya yo'q
+                {t('no_category_yet')}
               </p>
             )}
             {categories.map(c => (

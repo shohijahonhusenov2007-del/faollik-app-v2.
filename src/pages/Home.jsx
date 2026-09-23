@@ -5,11 +5,13 @@ import { collection, getDocs } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import { listenAchievements, listenAllAchievements } from '../lib/data'
+import { useLanguage } from '../context/LanguageContext'
 import { STATIC_CATEGORIES } from '../lib/categories'
 import CategoryBadge from '../components/CategoryBadge'
 
 export default function Home() {
   const { user, profile } = useAuth()
+  const { t } = useLanguage()
   const [achievements, setAchievements] = useState([])
   const [users, setUsers] = useState([])
   const isAdmin = profile?.role === 'Administrator'
@@ -40,7 +42,7 @@ export default function Home() {
     <div className="flex-page">
       <div className="header-card">
         <div className="header-top-row">
-          <h1 className="header-title">Bosh sahifa</h1>
+          <h1 className="header-title">{t('nav_home')}</h1>
           <span className="admin-badge">{profile?.role || 'Admin'}</span>
         </div>
         <Link to="/profil" className="user-card" style={{ textDecoration: 'none', color: 'white' }}>
@@ -58,28 +60,28 @@ export default function Home() {
       <div className="stats-row">
         <div className="stat-card stat-green">
           <span className="stat-number">{achievements.length}</span>
-          <span className="stat-label">Yutuqlar</span>
+          <span className="stat-label">{t('stat_achievements')}</span>
         </div>
         <div className="stat-card stat-blue">
           <span className="stat-number">{STATIC_CATEGORIES.length}</span>
-          <span className="stat-label">Kategoriyalar</span>
+          <span className="stat-label">{t('stat_categories')}</span>
         </div>
         <div className="stat-card stat-purple">
           <span className="stat-number">{photoCount}</span>
-          <span className="stat-label">Rasmlar</span>
+          <span className="stat-label">{t('stat_images')}</span>
         </div>
       </div>
 
       <div className="page-content" style={{ paddingTop: 8 }}>
         <div className="section-header">
-          <h2>Barcha yangi yutuqlar</h2>
-          <Link to="/yutuqlar" className="link-btn">Barchasi <ChevronRight size={15} /></Link>
+          <h2>{t('home_section_new')}</h2>
+          <Link to="/yutuqlar" className="link-btn">{t('see_all')} <ChevronRight size={15} /></Link>
         </div>
 
         {achievements.length === 0 ? (
           <div className="empty-state">
             <ImageOff size={40} style={{ margin: '0 auto' }} />
-            <p>Hali yutuq qo'shilmagan.</p>
+            <p>{t('empty_no_achievements')}</p>
           </div>
         ) : (
           achievements.slice(0, 5).map(a => (

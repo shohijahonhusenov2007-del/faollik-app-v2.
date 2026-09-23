@@ -9,6 +9,7 @@ import {
   listenMessages, sendMessage, sendVoiceMessage, editMessage, deleteMessage, setTyping, markRead,
   addGroupMembers, removeGroupMember, pinMessage, unpinMessage
 } from '../lib/chat'
+import { useLanguage } from '../context/LanguageContext'
 
 function formatTime(ts) {
   if (!ts?.toMillis) return ''
@@ -33,6 +34,7 @@ export default function ChatThread() {
   const { id: convId } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [conversation, setConversation] = useState(null)
   const [messages, setMessages] = useState([])
   const [text, setText] = useState('')
@@ -97,7 +99,7 @@ export default function ChatThread() {
   const otherName = conversation?.names?.[otherId] || 'Foydalanuvchi'
   const isOtherTyping = conversation?.typing?.[otherId]
   const otherLastRead = conversation?.lastRead?.[otherId]
-  const displayName = isGroup ? (conversation?.groupName || 'Guruh') : otherName
+  const displayName = isGroup ? (conversation?.groupName || t('group_fallback')) : otherName
   const groupTypingText = isGroup
     ? Object.entries(conversation?.typing || {})
         .filter(([uid, val]) => val && uid !== user?.uid)
@@ -194,11 +196,11 @@ export default function ChatThread() {
   const startRecording = async () => {
     try {
       const canRecord = await VoiceRecorder.canDeviceVoiceRecord()
-      if (!canRecord.value) { alert("Qurilma ovoz yozishni qo'llamaydi"); return }
+      if (!canRecord.value) { alert(t('device_no_record')); return }
       const hasPermission = await VoiceRecorder.hasAudioRecordingPermission()
       if (!hasPermission.value) {
         const req = await VoiceRecorder.requestAudioRecordingPermission()
-        if (!req.value) { alert('Mikrofon uchun ruxsat kerak'); return }
+        if (!req.value) { alert(t('mic_permission_needed')); return }
       }
       await VoiceRecorder.startRecording()
       setIsRecording(true)
@@ -245,7 +247,7 @@ export default function ChatThread() {
   }
 
   const handleDelete = async (m) => {
-    if (confirm("Xabar o'chirilsinmi?")) {
+    if (confirm(t('confirm_delete_message'))) {
       await deleteMessage(convId, m.id)
     }
     setActionMsg(null)
@@ -274,7 +276,7 @@ export default function ChatThread() {
   }
 
   const handleLeaveGroup = async () => {
-    if (confirm("Guruhdan chiqmoqchimisiz?")) {
+    if (confirm(t('confirm_leave_group'))) {
       await removeGroupMember(convId, user.uid)
       navigate('/chat')
     }
@@ -294,7 +296,7 @@ export default function ChatThread() {
           <div>
             <p className="chat-thread-name">{displayName}</p>
             <p className="chat-thread-status">
-              {isGroup ? (groupTypingText ? `${groupTypingText} yozmoqda...` : `${conversation?.participants?.length || 0} a'zo`) : (isOtherTyping ? 'yozmoqda...' : '')}
+              {isGroup ? (groupTypingText ? `${groupTypingText} ${t('typing_suffix')}` : `${conversation?.participants?.length || 0} ${t('members_word')}`) : (isOtherTyping ? t('typing_suffix') : '')}
             </p>
           </div>
         </div>
@@ -307,9 +309,9 @@ export default function ChatThread() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'rgba(37,99,235,0.08)', borderBottom: '1px solid var(--color-border)' }}>
           <Pin size={15} color="var(--color-primary)" style={{ flexShrink: 0 }} />
           <div style={{ flex: 1, overflow: 'hidden' }}>
-            <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: 'var(--color-primary)' }}>Pin qilingan xabar</p>
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: 'var(--color-primary)' }}>{t('pinned_message_label')}</p>
             <p style={{ margin: 0, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {pinnedMsg.deleted ? "Xabar o'chirildi" : (pinnedMsg.text || (pinnedMsg.imageUrl ? '📷 Rasm' : (pinnedMsg.audioData ? '🎤 Ovozli xabar' : '')))}
+              {pinnedMsg.deleted ? t('message_deleted') : (pinnedMsg.text || (pinnedMsg.imageUrl ? '📷 ' + t('photo_label') : (pinnedMsg.audioData ? '🎤 ' + t('voice_message_label') : '')))}
             </p>
           </div>
           <button className="icon-only-btn" onClick={() => unpinMessage(convId)}><X size={16} /></button>
@@ -321,14 +323,14 @@ export default function ChatThread() {
           <input
             type="text"
             className="form-input"
-            placeholder="Xabarlarni qidirish..."
+            placeholder={t('chat_search_placeholder')}
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             autoFocus
             style={{ flex: 1 }}
           />
           <span style={{ fontSize: 12, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
-            {searchQuery.trim() ? `${filteredMessages.length} ta` : ''}
+            {searchQuery.trim() ? `${filteredMessages.length}` : ''}
           </span>
           <button className="icon-only-btn" onClick={() => { setShowSearch(false); setSearchQuery('') }}>
             <X size={18} />
@@ -355,7 +357,7 @@ export default function ChatThread() {
                   </span>
                 )}
                 {m.deleted ? (
-                  <span className="chat-bubble-deleted">Xabar o'chirildi</span>
+                  <span className="chat-bubble-deleted">{t('message_deleted')}</span>
                 ) : (
                   <>
                     {m.imageUrl && <img src={m.imageUrl} alt="" />}
@@ -366,7 +368,7 @@ export default function ChatThread() {
                   </>
                 )}
                 <div className="chat-bubble-meta">
-                  {m.edited && !m.deleted && <span>tahrirlangan</span>}
+                  {m.edited && !m.deleted && <span>{t('edited_label')}</span>}
                   <span>{formatTime(m.createdAt)}</span>
                   {mine && !m.deleted && !isGroup && (isRead ? <CheckCheck size={13} /> : <Check size={13} />)}
                   {mine && !m.deleted && isGroup && (isGroupFullyRead(m) ? <CheckCheck size={13} /> : <Check size={13} />)}
@@ -382,21 +384,21 @@ export default function ChatThread() {
                         style={{ display: 'block', width: '100%', padding: '10px 16px', border: 'none', background: 'white', textAlign: 'left', fontSize: 13 }}
                         onClick={(e) => { e.stopPropagation(); startEdit(m) }}
                       >
-                        Tahrirlash
+                        {t('edit_message')}
                       </button>
                     )}
                     <button
                       style={{ display: 'block', width: '100%', padding: '10px 16px', border: 'none', background: 'white', textAlign: 'left', fontSize: 13 }}
                       onClick={(e) => { e.stopPropagation(); handleTogglePin(m) }}
                     >
-                      {conversation?.pinnedMessageId === m.id ? "Pin'dan olib tashlash" : 'Pin qilish'}
+                      {conversation?.pinnedMessageId === m.id ? t('unpin_action') : t('pin_action')}
                     </button>
                     {mine && (
                       <button
                         style={{ display: 'block', width: '100%', padding: '10px 16px', border: 'none', background: 'white', textAlign: 'left', fontSize: 13, color: '#DC2626' }}
                         onClick={(e) => { e.stopPropagation(); handleDelete(m) }}
                       >
-                        O'chirish
+                        {t('delete_action')}
                       </button>
                     )}
                   </div>
@@ -419,9 +421,9 @@ export default function ChatThread() {
 
       {editingId && (
         <div style={{ padding: '6px 12px 0 12px', fontSize: 12, color: 'var(--color-primary)', display: 'flex', justifyContent: 'space-between' }}>
-          <span>Xabarni tahrirlash</span>
+          <span>{t('editing_message_label')}</span>
           <button style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)' }} onClick={() => { setEditingId(null); setText('') }}>
-            Bekor qilish
+            {t('cancel')}
           </button>
         </div>
       )}
@@ -430,7 +432,7 @@ export default function ChatThread() {
         <div className="chat-input-bar" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, color: '#EF4444', fontWeight: 600, fontSize: 13.5 }}>
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#EF4444' }} />
-            Yozilmoqda... {recordSeconds}s / {MAX_RECORD_SECONDS}s
+            {t('recording_label')} {recordSeconds}s / {MAX_RECORD_SECONDS}s
           </span>
           <button onClick={stopRecording} style={{ background: '#EF4444', borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none' }}>
             <Square size={15} color="white" fill="white" />
@@ -447,7 +449,7 @@ export default function ChatThread() {
           </button>
           <input
             type="text"
-            placeholder="Xabar..."
+            placeholder={t('message_input_placeholder')}
             value={text}
             onChange={e => handleTextChange(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSend()}
@@ -464,7 +466,7 @@ export default function ChatThread() {
             {!showAddMembers ? (
               <>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 16px 12px' }}>
-                  <h3 style={{ margin: 0, fontSize: 16 }}>{conversation?.groupName || 'Guruh'}</h3>
+                  <h3 style={{ margin: 0, fontSize: 16 }}>{conversation?.groupName || t('group_fallback')}</h3>
                   <button className="icon-only-btn" onClick={() => setShowGroupInfo(false)}><X size={18} /></button>
                 </div>
 
@@ -474,11 +476,11 @@ export default function ChatThread() {
                   onClick={() => setShowAddMembers(true)}
                 >
                   <UserPlus size={18} />
-                  A'zo qo'shish
+                  {t('add_member')}
                 </button>
 
                 <p style={{ padding: '0 16px 8px', fontSize: 12.5, color: 'var(--color-text-muted)' }}>
-                  A'zolar ({conversation?.participants?.length || 0})
+                  {t('members_label', { count: conversation?.participants?.length || 0 })}
                 </p>
 
                 <div style={{ maxHeight: '40vh', overflowY: 'auto' }}>
@@ -488,7 +490,7 @@ export default function ChatThread() {
                         {(conversation?.names?.[uid] || 'F').charAt(0).toUpperCase()}
                       </div>
                       <span style={{ flex: 1, marginLeft: 10 }}>
-                        {conversation?.names?.[uid] || 'Foydalanuvchi'}{uid === user.uid ? ' (siz)' : ''}
+                        {conversation?.names?.[uid] || 'Foydalanuvchi'}{uid === user.uid ? ' ' + t('you_suffix') : ''}
                       </span>
                       {uid !== user.uid && (
                         <button className="icon-btn" onClick={() => handleRemoveMember(uid)}>
@@ -502,14 +504,14 @@ export default function ChatThread() {
                 <div style={{ padding: 16 }}>
                   <button className="profile-menu-item danger" onClick={handleLeaveGroup}>
                     <LogOut size={18} />
-                    Guruhdan chiqish
+                    {t('leave_group')}
                   </button>
                 </div>
               </>
             ) : (
               <>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 16px 12px' }}>
-                  <h3 style={{ margin: 0, fontSize: 16 }}>A'zo qo'shish</h3>
+                  <h3 style={{ margin: 0, fontSize: 16 }}>{t('add_member')}</h3>
                   <button className="icon-only-btn" onClick={() => setShowAddMembers(false)}><X size={18} /></button>
                 </div>
 
@@ -529,13 +531,13 @@ export default function ChatThread() {
                     )
                   })}
                   {allUsers.filter(u => !(conversation?.participants || []).includes(u.id)).length === 0 && (
-                    <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 16 }}>Qo'shiladigan foydalanuvchi yo'q</p>
+                    <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 16 }}>{t('no_addable_users')}</p>
                   )}
                 </div>
 
                 <div style={{ padding: 16 }}>
                   <button className="btn-primary" style={{ width: '100%' }} disabled={selectedNew.length === 0} onClick={handleAddMembers}>
-                    Qo'shish ({selectedNew.length})
+                    {t('add_count', { count: selectedNew.length })}
                   </button>
                 </div>
               </>
@@ -548,7 +550,7 @@ export default function ChatThread() {
         <div className="sheet-overlay" onClick={() => setSeenSheetMsg(null)}>
           <div className="sheet-panel" onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 16px 12px' }}>
-              <h3 style={{ margin: 0, fontSize: 16 }}>Xabar holati</h3>
+              <h3 style={{ margin: 0, fontSize: 16 }}>{t('message_status_title')}</h3>
               <button className="icon-only-btn" onClick={() => setSeenSheetMsg(null)}><X size={18} /></button>
             </div>
             <div style={{ maxHeight: '50vh', overflowY: 'auto' }}>
@@ -566,7 +568,7 @@ export default function ChatThread() {
                         <CheckCheck size={14} /> {formatTime(lr)}
                       </span>
                     ) : (
-                      <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Hali o'qimadi</span>
+                      <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{t('not_read_yet')}</span>
                     )}
                   </div>
                 )

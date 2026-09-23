@@ -5,6 +5,7 @@ import { MessageCircle, Users, Plus, X, Check } from 'lucide-react'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import { listenConversations, getOrCreateConversation, createGroupConversation } from '../lib/chat'
+import { useLanguage } from '../context/LanguageContext'
 
 function formatTime(ts) {
   if (!ts?.toMillis) return ''
@@ -18,6 +19,7 @@ function formatTime(ts) {
 
 export default function ChatList() {
   const { user, profile } = useAuth()
+  const { t } = useLanguage()
   const navigate = useNavigate()
   const [conversations, setConversations] = useState([])
   const [users, setUsers] = useState([])
@@ -89,15 +91,15 @@ export default function ChatList() {
       .filter(([uid, val]) => val && uid !== user?.uid)
       .map(([uid]) => conv.names?.[uid] || 'Kimdir')
     if (typingNames.length === 0) return null
-    return `${typingNames.join(', ')} yozmoqda...`
+    return `${typingNames.join(', ')} ${t('typing_suffix')}`
   }
 
   return (
     <div className="flex-page">
       <div className="header-card" style={{ paddingBottom: 16 }}>
         <div className="header-top-row" style={{ marginBottom: 0 }}>
-          <h1 className="header-title">Chat</h1>
-          <button className="icon-only-btn" onClick={() => setShowGroupSheet(true)} title="Yangi guruh">
+          <h1 className="header-title">{t('nav_chat')}</h1>
+          <button className="icon-only-btn" onClick={() => setShowGroupSheet(true)} title={t('new_group')}>
             <Plus size={20} />
           </button>
         </div>
@@ -107,13 +109,13 @@ export default function ChatList() {
         {conversations.length === 0 && newContacts.length === 0 && (
           <div className="empty-state">
             <MessageCircle size={40} style={{ margin: '0 auto' }} />
-            <p>Hali suhbatlar yo'q.</p>
+            <p>{t('no_conversations')}</p>
           </div>
         )}
 
         {conversations.length > 0 && (
           <>
-            <div className="section-header" style={{ marginTop: 0 }}><h2>Suhbatlar</h2></div>
+            <div className="section-header" style={{ marginTop: 0 }}><h2>{t('conversations_label')}</h2></div>
             {conversations.map(conv => {
               if (conv.isGroup) {
                 const typingText = groupTypingText(conv)
@@ -123,9 +125,9 @@ export default function ChatList() {
                       <Users size={18} />
                     </div>
                     <div className="chat-list-info">
-                      <p className="chat-list-name">{conv.groupName || 'Guruh'}</p>
+                      <p className="chat-list-name">{conv.groupName || t('group_fallback')}</p>
                       <p className="chat-list-preview">
-                        {typingText || conv.lastMessage || 'Suhbatni boshlang'}
+                        {typingText || conv.lastMessage || t('start_conversation')}
                       </p>
                     </div>
                     <span className="chat-list-time">{formatTime(conv.lastMessageAt)}</span>
@@ -141,7 +143,7 @@ export default function ChatList() {
                   <div className="chat-list-info">
                     <p className="chat-list-name">{otherName(conv)}</p>
                     <p className="chat-list-preview">
-                      {conv.typing?.[otherOf(conv)] ? 'yozmoqda...' : (conv.lastMessage || 'Suhbatni boshlang')}
+                      {conv.typing?.[otherOf(conv)] ? t('typing_suffix') : (conv.lastMessage || t('start_conversation'))}
                     </p>
                   </div>
                   <span className="chat-list-time">{formatTime(conv.lastMessageAt)}</span>
@@ -153,7 +155,7 @@ export default function ChatList() {
 
         {newContacts.length > 0 && (
           <>
-            <div className="section-header"><h2>Barcha foydalanuvchilar</h2></div>
+            <div className="section-header"><h2>{t('all_users_label')}</h2></div>
             {newContacts.map(u => (
               <div key={u.id} className="chat-list-item" style={{ cursor: 'pointer' }} onClick={() => openContact(u)}>
                 <div className="chat-list-avatar">
@@ -173,7 +175,7 @@ export default function ChatList() {
         <div className="sheet-overlay" onClick={closeGroupSheet}>
           <div className="sheet-panel" onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 16px 12px' }}>
-              <h3 style={{ margin: 0, fontSize: 16 }}>Yangi guruh</h3>
+              <h3 style={{ margin: 0, fontSize: 16 }}>{t('new_group')}</h3>
               <button className="icon-only-btn" onClick={closeGroupSheet}><X size={18} /></button>
             </div>
 
@@ -181,14 +183,14 @@ export default function ChatList() {
               <input
                 type="text"
                 className="form-input"
-                placeholder="Guruh nomi"
+                placeholder={t('group_name_placeholder')}
                 value={groupName}
                 onChange={e => setGroupName(e.target.value)}
               />
             </div>
 
             <p style={{ padding: '0 16px 8px', fontSize: 12.5, color: 'var(--color-text-muted)' }}>
-              A'zolarni tanlang ({selectedIds.length} tanlandi)
+              {t('select_members', { count: selectedIds.length })}
             </p>
 
             <div style={{ maxHeight: '40vh', overflowY: 'auto' }}>
@@ -207,7 +209,7 @@ export default function ChatList() {
                 )
               })}
               {users.length === 0 && (
-                <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 16 }}>Foydalanuvchi topilmadi</p>
+                <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 16 }}>{t('no_users_found')}</p>
               )}
             </div>
 
@@ -218,7 +220,7 @@ export default function ChatList() {
                 disabled={!groupName.trim() || selectedIds.length === 0 || creating}
                 onClick={handleCreateGroup}
               >
-                {creating ? 'Yaratilmoqda...' : 'Guruh yaratish'}
+                {creating ? t('creating') : t('create_group')}
               </button>
             </div>
           </div>

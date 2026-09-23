@@ -10,11 +10,13 @@ import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import { deleteAchievement, toggleLike, listenComments, addComment } from '../lib/data'
 import CategoryBadge from '../components/CategoryBadge'
+import { useLanguage } from '../context/LanguageContext'
 
 export default function AchievementDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { profile, user } = useAuth()
+  const { t } = useLanguage()
   const [achievement, setAchievement] = useState(null)
   const [loading, setLoading] = useState(true)
   const [lightboxUrl, setLightboxUrl] = useState(null)
@@ -190,7 +192,7 @@ export default function AchievementDetail() {
   if (!achievement) {
     return (
       <div className="page-content" style={{ paddingTop: 20 }}>
-        <p>Yutuq topilmadi.</p>
+        <p>{t('not_found_achievement')}</p>
       </div>
     )
   }
@@ -201,7 +203,7 @@ export default function AchievementDetail() {
     <div className="flex-page">
       <div className="fullpage-header">
         <button className="fullpage-back" onClick={() => navigate(-1)}><ArrowLeft size={20} /></button>
-        <h3>Yutuq detali</h3>
+        <h3>{t('detail_title')}</h3>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <button className="fullpage-back" onClick={handleExportCard}><FileText size={18} /></button>
           {(achievement.uid === user.uid || profile?.role === 'Administrator') && (
@@ -256,7 +258,7 @@ export default function AchievementDetail() {
         {achievement.imageUrls && achievement.imageUrls.length > 0 && (
           <>
             <h2 style={{ fontSize: 16, fontWeight: 700, marginTop: 20 }}>
-              Rasmlar ({achievement.imageUrls.length})
+              {t('images_label', { count: achievement.imageUrls.length })}
             </h2>
             <div className="detail-thumb-row">
               {achievement.imageUrls.map((url, i) => (
@@ -275,12 +277,12 @@ export default function AchievementDetail() {
 
         <h2 style={{ fontSize: 16, fontWeight: 700, marginTop: 24, display: 'flex', alignItems: 'center', gap: 6 }}>
           <MessageCircle size={16} />
-          Izohlar ({comments.length})
+          {t('comments_label', { count: comments.length })}
         </h2>
 
         <div style={{ marginTop: 10 }}>
           {comments.length === 0 ? (
-            <p style={{ color: 'var(--color-text-muted)', fontSize: 13.5 }}>Hali izoh yo'q</p>
+            <p style={{ color: 'var(--color-text-muted)', fontSize: 13.5 }}>{t('no_comments')}</p>
           ) : (
             comments.map(c => (
               <div key={c.id} style={{ marginBottom: 12, paddingBottom: 12, borderBottom: '1px solid var(--color-border)' }}>
@@ -295,7 +297,7 @@ export default function AchievementDetail() {
           <input
             type="text"
             className="form-input"
-            placeholder="Izoh yozing..."
+            placeholder={t('comment_placeholder')}
             value={commentText}
             onChange={e => setCommentText(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleAddComment()}
@@ -318,11 +320,11 @@ export default function AchievementDetail() {
           <div className="lightbox-bottom">
             <button className="lightbox-action-btn" onClick={handleSaveToGallery}>
               <span className="icon-circle"><Download size={20} /></span>
-              Saqlash
+              {t('save')}
             </button>
             <button className="lightbox-action-btn" onClick={handleShare}>
               <span className="icon-circle"><Share2 size={20} /></span>
-              Ulashish
+              {t('share_label')}
             </button>
           </div>
         </div>

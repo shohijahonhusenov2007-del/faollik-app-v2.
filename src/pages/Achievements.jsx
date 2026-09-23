@@ -7,9 +7,11 @@ import { useAuth } from '../context/AuthContext'
 import { listenAchievements, listenAllAchievements, deleteAchievement, toggleLike } from '../lib/data'
 import { STATIC_CATEGORIES } from '../lib/categories'
 import CategoryBadge from '../components/CategoryBadge'
+import { useLanguage } from '../context/LanguageContext'
 
 export default function Achievements() {
   const { user, profile } = useAuth()
+  const { t } = useLanguage()
   const isAdmin = profile?.role === 'Administrator'
   const [achievements, setAchievements] = useState([])
   const [allAchievements, setAllAchievements] = useState([])
@@ -83,7 +85,7 @@ export default function Achievements() {
     <div className="flex-page">
       <div className="header-card" style={{ paddingBottom: 20 }}>
         <div className="header-top-row" style={{ marginBottom: 0 }}>
-          <h1 className="header-title">Yutuqlar</h1>
+          <h1 className="header-title">{t('stat_achievements')}</h1>
         </div>
         {isAdmin && (
           <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
@@ -92,14 +94,14 @@ export default function Achievements() {
               style={{ flex: 1 }}
               onClick={() => setViewMode('personal')}
             >
-              Shaxsiy yutuqlar
+              {t('ach_personal')}
             </button>
             <button
               className={`filter-chip ${viewMode === 'all' ? 'active' : ''}`}
               style={{ flex: 1 }}
               onClick={() => setViewMode('all')}
             >
-              Barcha yutuqlar
+              {t('ach_all')}
             </button>
           </div>
         )}
@@ -107,7 +109,7 @@ export default function Achievements() {
           <div className="header-search">
             <Search size={16} />
             <input
-              placeholder="Qidirish..."
+              placeholder={t('search_placeholder')}
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
@@ -128,7 +130,7 @@ export default function Achievements() {
         <button
           onClick={() => setFilter('')}
           className={`filter-chip ${filter === '' ? 'active' : ''}`}>
-          Barchasi
+          {t('see_all')}
         </button>
         {STATIC_CATEGORIES.map(c => (
           <button
@@ -144,7 +146,7 @@ export default function Achievements() {
         {filtered.length === 0 ? (
           <div className="empty-state">
             <ImageOff size={40} style={{ margin: '0 auto' }} />
-            <p>Hech narsa topilmadi.</p>
+            <p>{t('empty_nothing_found')}</p>
           </div>
         ) : (
           filtered.map(a => (
@@ -193,32 +195,32 @@ export default function Achievements() {
           <div className="modal-sheet" onClick={e => e.stopPropagation()}>
             <div className="modal-handle" />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 className="modal-title">Filtrlash</h3>
+              <h3 className="modal-title">{t('filter_sheet_title')}</h3>
               <button className="icon-btn" onClick={() => setShowFilterSheet(false)}><X size={22} /></button>
             </div>
 
             <div className="form-group">
-              <label className="form-label">Saralash</label>
+              <label className="form-label">{t('sort_label')}</label>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button
                   className={`filter-chip ${sortOrder === 'desc' ? 'active' : ''}`}
                   style={{ flex: 1 }}
                   onClick={() => setSortOrder('desc')}
                 >
-                  Yangi birinchi
+                  {t('sort_new_first')}
                 </button>
                 <button
                   className={`filter-chip ${sortOrder === 'asc' ? 'active' : ''}`}
                   style={{ flex: 1 }}
                   onClick={() => setSortOrder('asc')}
                 >
-                  Eski birinchi
+                  {t('sort_old_first')}
                 </button>
               </div>
             </div>
 
             <div className="form-group">
-              <label className="form-label">Sana oralig'i</label>
+              <label className="form-label">{t('date_range_label')}</label>
               <div style={{ display: 'flex', gap: 8 }}>
                 <input type="date" className="form-input" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
                 <input type="date" className="form-input" value={dateTo} onChange={e => setDateTo(e.target.value)} />
@@ -226,10 +228,10 @@ export default function Achievements() {
             </div>
 
             <button className="btn-secondary" onClick={clearFilters} style={{ marginBottom: 8 }}>
-              Tozalash
+              {t('clear_filters')}
             </button>
             <button className="btn-primary" onClick={() => setShowFilterSheet(false)}>
-              Qo'llash
+              {t('apply')}
             </button>
           </div>
         </div>

@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../context/LanguageContext'
 
 export default function Login() {
   const { login, register, resetPassword } = useAuth()
+  const { t } = useLanguage()
   const [isRegister, setIsRegister] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -15,13 +17,13 @@ export default function Login() {
     setError('')
     setInfo('')
     if (!email) {
-      setError('Avval email manzilingizni kiriting')
+      setError(t('enter_email_first'))
       return
     }
     setResetting(true)
     try {
       await resetPassword(email)
-      setInfo('Parolni tiklash havolasi emailingizga yuborildi')
+      setInfo(t('reset_email_sent'))
     } catch (err) {
       setError('Xatolik: ' + (err.message || ''))
     } finally {
@@ -56,7 +58,7 @@ export default function Login() {
         <img src="/app-icon-192.png" alt="logo" className="login-logo" />
         <h1 style={{ textAlign: 'center', fontSize: 20, marginBottom: 4 }}>Ijtimoiy Faollik Portfolio</h1>
         <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', fontSize: 13, marginBottom: 20 }}>
-          {isRegister ? 'Yangi hisob yarating' : 'Hisobingizga kiring'}
+          {isRegister ? t('login_subtitle_register') : t('login_subtitle_login')}
         </p>
 
         <form onSubmit={handleSubmit} autoComplete="on">
@@ -69,7 +71,7 @@ export default function Login() {
             />
           </div>
           <div className="form-group">
-            <label className="form-label">Parol</label>
+            <label className="form-label">{t('password_label')}</label>
             <input
               type="password" name="password" id="login-password"
               autoComplete={isRegister ? 'new-password' : 'current-password'}
@@ -84,13 +86,13 @@ export default function Login() {
               disabled={resetting}
               style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontSize: 12.5, padding: 0, marginBottom: 14, cursor: 'pointer' }}
             >
-              {resetting ? 'Yuborilmoqda...' : "Parolni unutdingizmi?"}
+              {resetting ? t('sending') : t('forgot_password')}
             </button>
           )}
           {error && <p className="error-text">{error}</p>}
           {info && <p style={{ color: 'var(--color-green)', fontSize: 13, marginBottom: 10 }}>{info}</p>}
           <button className="btn-primary" type="submit" disabled={loading}>
-            {loading ? 'Kutilmoqda...' : (isRegister ? 'Ro\'yxatdan o\'tish' : 'Kirish')}
+            {loading ? t('waiting') : (isRegister ? t('register_submit') : t('login_submit'))}
           </button>
         </form>
 
@@ -100,7 +102,7 @@ export default function Login() {
           style={{ width: '100%', marginTop: 12 }}
           onClick={() => { setIsRegister(!isRegister); setError('') }}
         >
-          {isRegister ? 'Kirish oynasiga qaytish' : 'Ro\'yxatdan o\'tish'}
+          {isRegister ? t('back_to_login') : t('register_submit')}
         </button>
       </div>
     </div>
