@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ijtimoiy Faollik Portfolio — yuklab olish</title>
+<style>
+  :root {
+    --navy: #1B3A6B;
+    --navy-deep: #122845;
+    --gold: #F5A623;
+    --bg: #F4F6F9;
+    --card: #FFFFFF;
+    --text: #16243D;
+    --text-muted: #5C6B84;
+    --border: #E3E8F0;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: inherit; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0F1720;
+      --card: #182432;
+      --text: #EAF0FB;
+      --text-muted: #9BAAC4;
+      --border: #2A394E;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0F1720;
+    --card: #182432;
+    --text: #EAF0FB;
+    --text-muted: #9BAAC4;
+    --border: #2A394E;
+  }
+
+  .hero {
+    background: linear-gradient(160deg, var(--navy) 0%, var(--navy-deep) 100%);
+    color: #fff;
+    padding: 44px 20px 40px;
+    text-align: center;
+  }
+  .badge {
+    width: 76px; height: 76px; margin: 0 auto 18px;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 22px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px;
+  }
+  .hero h1 {
+    font-size: 24px;
+    line-height: 1.3;
+    margin: 0 0 8px;
+    font-weight: 800;
+    max-width: 320px;
+    margin-left: auto; margin-right: auto;
+  }
+  .hero p {
+    color: rgba(255,255,255,0.78);
+    font-size: 14.5px;
+    line-height: 1.55;
+    max-width: 340px;
+    margin: 0 auto;
+  }
+
+  .wrap { max-width: 480px; margin: 0 auto; padding: 0 18px 48px; }
+
+  .download-card {
+    background: var(--card);
+    border-radius: 20px;
+    padding: 20px;
+    margin-top: -28px;
+    box-shadow: 0 12px 28px rgba(18,40,69,0.18);
+    border: 1px solid var(--border);
+  }
+  .btn-download {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    width: 100%;
+    background: var(--gold);
+    color: #16243D;
+    font-weight: 800;
+    font-size: 16px;
+    text-decoration: none;
+    padding: 16px 18px;
+    border-radius: 14px;
+    box-shadow: 0 6px 16px rgba(245,166,35,0.35);
+  }
+  .btn-download:active { transform: scale(0.98); }
+  .meta-row {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 12px; font-size: 12.5px; color: var(--text-muted);
+  }
+
+  .section-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-muted);
+    margin: 32px 0 12px;
+  }
+
+  .features {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .feature {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+  }
+  .feature .emoji { font-size: 20px; display: block; margin-bottom: 6px; }
+  .feature .label { font-size: 13px; font-weight: 700; }
+  .feature .sub { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
+
+  .steps {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 6px 16px;
+  }
+  .step {
+    display: flex; gap: 12px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .step:last-child { border-bottom: none; }
+  .step-num {
+    flex-shrink: 0;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: var(--navy);
+    color: #fff;
+    font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .step-text { font-size: 13.5px; line-height: 1.5; padding-top: 2px; }
+  .step-text b { display: block; margin-bottom: 2px; }
+
+  .trust {
+    margin-top: 24px;
+    background: rgba(27,58,107,0.06);
+    border: 1px solid rgba(27,58,107,0.15);
+    border-radius: 14px;
+    padding: 14px 16px;
+    font-size: 12.5px;
+    line-height: 1.6;
+    color: var(--text);
+  }
+  :root[data-theme="dark"] .trust { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.12); }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .trust { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.12); }
+  }
+
+  footer {
+    text-align: center;
+    font-size: 11.5px;
+    color: var(--text-muted);
+    margin-top: 28px;
+  }
+</style>
+</head>
+<body>
+
+  <div class="hero">
+    <div class="badge">🏆</div>
+    <h1>Ijtimoiy Faollik Portfolio</h1>
+    <p>O'quvchilarning ijtimoiy faoliyatini bir joyda yig'ish, chat, statistika va yutuqlar — barchasi bitta ilovada.</p>
+  </div>
+
+  <div class="wrap">
+    <div class="download-card">
+      <a class="btn-download" href="https://github.com/shohijahonhusenov2007-del/faollik-app-v2./releases/latest/download/app-debug.apk" download>
+        ⬇️ Yuklab olish (APK)
+      </a>
+      <div class="meta-row">
+        <span>Android 7.0+</span>
+        <span>Har doim eng so'nggi versiya</span>
+      </div>
+    </div>
+
+    <div class="section-title">Ilova nima qila oladi</div>
+    <div class="features">
+      <div class="feature"><span class="emoji">🏆</span><span class="label">Yutuqlar</span><span class="sub">Rasm, tavsif, kategoriya bilan saqlash</span></div>
+      <div class="feature"><span class="emoji">💬</span><span class="label">Chat</span><span class="sub">Shaxsiy va guruh suhbatlari</span></div>
+      <div class="feature"><span class="emoji">📊</span><span class="label">Statistika</span><span class="sub">Reyting va oylik hisobot</span></div>
+      <div class="feature"><span class="emoji">📄</span><span class="label">PDF eksport</span><span class="sub">Portfolio'ni bosib chiqarish</span></div>
+      <div class="feature"><span class="emoji">🌍</span><span class="label">10 til</span><span class="sub">O'zbek, rus, ingliz va boshqalar</span></div>
+      <div class="feature"><span class="emoji">🌙</span><span class="label">Qorong'i rejim</span><span class="sub">Ko'zga yengil interfeys</span></div>
+    </div>
+
+    <div class="section-title">O'rnatish qadamlari</div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-text"><b>Yuklab oling</b>Yuqoridagi tugmani bosing, fayl brauzeringizga yuklanadi.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-text"><b>Faylni oching</b>Yuklab olingan "app-debug.apk" faylini bosing.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-text"><b>Ruxsat bering</b>"Noma'lum manbadan o'rnatish" so'ralsa — "Ruxsat berish" yoki "Baribir o'rnatish"ni tanlang.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-text"><b>O'rnating</b>"O'rnatish" tugmasini bosing — bir necha soniyada tayyor.</div>
+      </div>
+    </div>
+
+    <div class="trust">
+      ℹ️ Bu ogohlantirish Google Play'dan tashqarida yuklangan HAR QANDAY ilova uchun Android'ning odatiy xavfsizlik tekshiruvi — ilovaning o'zi xavfli emas. Kodning to'liq manbasini <a href="https://github.com/shohijahonhusenov2007-del/faollik-app-v2./" style="color:inherit">GitHub'da</a> ko'rishingiz mumkin.
+    </div>
+
+    <footer>Ijtimoiy Faollik Portfolio · barcha huquqlar himoyalangan</footer>
+  </div>
+
+</body>
+</html>
